@@ -1,0 +1,48 @@
+set -x
+
+export VLLM_ATTENTION_BACKEND=XFORMERS
+script_dir="$(dirname "$(readlink -f "$0")")"
+
+python3 -m verl.trainer.main_ppo \
+    algorithm.adv_estimator=grpo \
+    data.train_files=$HOME/data/math-cl/train.parquet \
+    data.val_files="[$HOME/data/aime24/test.parquet,$HOME/data/math500/test.parquet]" \
+    data.train_batch_size=128 \
+    data.val_batch_size=128 \
+    data.max_prompt_length=1024 \
+    data.max_response_length=8192 \
+    data.shuffle=False \
+    actor_rollout_ref.model.path=Qwen/Qwen2.5-7B \
+    actor_rollout_ref.actor.optim.lr=1e-6 \
+    actor_rollout_ref.actor.shuffle=False \
+    actor_rollout_ref.model.use_remove_padding=True \
+    actor_rollout_ref.actor.ppo_mini_batch_size=128 \
+    actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=2 \
+    actor_rollout_ref.actor.use_kl_loss=True \
+    actor_rollout_ref.actor.kl_loss_coef=0.0 \
+    actor_rollout_ref.actor.kl_loss_type=low_var_kl \
+    actor_rollout_ref.model.enable_gradient_checkpointing=True \
+    actor_rollout_ref.actor.fsdp_config.param_offload=False \
+    actor_rollout_ref.actor.fsdp_config.optimizer_offload=False \
+    actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=4 \
+    actor_rollout_ref.rollout.tensor_model_parallel_size=2 \
+    actor_rollout_ref.rollout.name=vllm \
+    actor_rollout_ref.rollout.max_num_batched_tokens=9216 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
+    actor_rollout_ref.rollout.temperature=1.0 \
+    actor_rollout_ref.rollout.n=32 \
+    actor_rollout_ref.rollout.enable_chunked_prefill=False \
+    actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=4 \
+    actor_rollout_ref.ref.fsdp_config.param_offload=True \
+    algorithm.kl_ctrl.kl_coef=0.0 \
+    custom_reward_function.path=${script_dir}/math_reward.py \
+    custom_reward_function.name=compute_score \
+    trainer.critic_warmup=0 \
+    trainer.logger=['console','wandb'] \
+    trainer.project_name='verl_grpo_qwen2_5_7b_cl' \
+    trainer.experiment_name='qwen2_5_7b_grpo_cl' \
+    trainer.n_gpus_per_node=8 \
+    trainer.nnodes=1 \
+    trainer.save_freq=10 \
+    trainer.test_freq=10 \
+    trainer.total_epochs=1 $@
