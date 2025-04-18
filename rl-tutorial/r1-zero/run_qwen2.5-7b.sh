@@ -1,6 +1,5 @@
 set -x
 
-export VLLM_ATTENTION_BACKEND=XFORMERS
 script_dir="$(dirname "$(readlink -f "$0")")"
 
 python3 -m verl.trainer.main_ppo \
@@ -12,6 +11,8 @@ python3 -m verl.trainer.main_ppo \
     data.max_prompt_length=1024 \
     data.max_response_length=8192 \
     data.shuffle=False \
+    actor_rollout_ref.rollout.enforce_eager=False \
+    actor_rollout_ref.rollout.free_cache_engine=False \
     actor_rollout_ref.model.path=Qwen/Qwen2.5-7B \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.actor.shuffle=False \
