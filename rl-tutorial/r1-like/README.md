@@ -177,7 +177,7 @@ In this section, we conducted some ablation experiments on key parameters for RL
 
 Analyzing the impact of reward shaping on final experimental results, the following experiment only uses accuracy_reward, without length reward
 
-![Qwen-7B Training Curve](assets/qwen-7b-no-length.png)
+<img src="assets/qwen-7b-no-length.png" width="600" alt="Qwen-7B Training Curve">
 
 - Since the DeepSeek-R1-Distill-Qwen model can already output long reasoning chains after distillation, when response length = 10k, some long and correct samples will be truncated and get 0 points, causing the model to tend to shorten reasoning chain length.
 
@@ -185,7 +185,7 @@ Analyzing the impact of reward shaping on final experimental results, the follow
 
 Analyzing the impact of kl loss values on final experimental effects, the following experiment uses kl=1e-2 (kl=0.0 in the above experiments)
 
-![Qwen-7B kl Training Curve](assets/qwen-7b-kl-1e-2.png)
+<img src="assets/qwen-7b-kl-1e-2.png" width="600" alt="Qwen-7B kl Training Curve">
 
 - This experiment uses kl=1e-2, observing that response length quickly decreases and reasoning ability degrades.
 - Conclusion: It is recommended to set a small kl value during RL training.
@@ -194,7 +194,7 @@ Analyzing the impact of kl loss values on final experimental effects, the follow
 
 Analyzing the impact of different rollout batch size settings on final experimental results.
 
-![Qwen-7B bs Training Curve](assets/qwen-7b-small-bs.png)
+<img src="assets/qwen-7b-small-bs.png" width="600" alt="Qwen-7B bs Training Curve">
 
 - This experiment uses rollout batch size=64 (set to 256 in above experiments), the entire training process is more unstable with larger fluctuations.
 - Both response length and reward convergence are poor.
