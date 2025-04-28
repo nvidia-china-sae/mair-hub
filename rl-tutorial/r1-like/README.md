@@ -90,7 +90,7 @@ This section uses Method Three as an example, pre-processing the dataset offline
 The dataset processing flow is as follows:
 
 1. First, download the ORZ dataset to the local path [ORZ dataset](https://github.com/Open-Reasoner-Zero/Open-Reasoner-Zero/blob/main/data/orz_math_57k_collected.json)
-2. Execute the script `python prepare_datast.py`
+2. Execute the script `python prepare_dataset.py`
 
 The core processing logic is as follows:
 

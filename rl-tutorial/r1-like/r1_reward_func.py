@@ -137,7 +137,7 @@ def calculate_length_reward(responses):
     for response in responses:
         response_tokens = tokenizer.encode(response, add_special_tokens=False)
         response_length = len(response_tokens)
-        # 当长度在5000时reward为-0.2，在10000时reward为0.2，线性变化
+        # When the length is 5000, reward is -0.2; when the length is 10000, reward is 0.2; linear change in between
         if response_length <= 5000:
             rewards.append(-0.3)
         elif response_length >= 10240:
@@ -152,21 +152,20 @@ def reward_func(queries, prompts, labels):
 
     responses = [extract_qwen_output(query) for query in queries]
 
-    # 将数据保存为JSON格式
+    # Save the data in JSON format
     import json
     import os
     from datetime import datetime
 
-    # 创建保存数据的目录
+    # Create a directory to save the data
     save_dir = "/apps/reward_data"
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    # 生成时间戳作为文件名
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = os.path.join(save_dir, f"reward_data_{timestamp}.json")
 
-    # 构建要保存的数据结构
     data = []
     for query, prompt, label in zip(queries, prompts, labels):
         data.append({
@@ -175,7 +174,7 @@ def reward_func(queries, prompts, labels):
             "label": label
         })
 
-    # 保存为JSON文件
+    # Save as a JSON file
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
     
@@ -191,7 +190,7 @@ def reward_func(queries, prompts, labels):
 
     length_rewards = calculate_length_reward(responses)
 
-    # 将 accuracy_rewards 和 length_rewards 相加得到最终的 rewards
+    # Add accuracy_rewards and length_rewards to get the final rewards
     final_rewards = []
     for acc, length in zip(accuracy_rewards, length_rewards):
         if acc == 1.0:
