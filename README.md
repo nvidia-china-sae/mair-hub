@@ -13,7 +13,7 @@ The following directories contain specialized resources for different aspects of
 
 ### RL-Tutorial
 
-The RL-Tutorial directory contains resources focused on reinforcement learning approaches in multimodal AI:
+The [rl-tutorial](./rl-tutorial/) directory contains resources focused on reinforcement learning approaches in multimodal AI:
 
 - [r1-zero](./rl-tutorial/r1-zero/): Tutorial of using the veRL framework to reproduce the reinforcement learning training process of DeepSeek-R1-Zero in the mathematics domain.
 - [r1-like](./rl-tutorial/r1-like/): Tutorial of using the openRLHF framework to reproduce the reinforcement learning training process of DeepSeek-R1 in the mathematics domain.
