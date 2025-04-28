@@ -83,7 +83,7 @@ OpenRLHF provides three different data processing methods:
 2. Method Two: Use the `--input_template` parameter to use a custom template
 3. Method Three: Pre-process the dataset offline and compose prompts according to custom formats
 
-### Processing Training
+### Processing Training Data
 
 This section uses Method Three as an example, pre-processing the dataset offline and composing prompts according to custom formats.
 
