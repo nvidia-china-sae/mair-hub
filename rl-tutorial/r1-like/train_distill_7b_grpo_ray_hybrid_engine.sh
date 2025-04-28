@@ -35,7 +35,7 @@ ray job submit --address="http://127.0.0.1:8265" \
    --zero_stage 3 \
    --bf16 \
    --actor_learning_rate 5e-6 \
-   --prompt_data pe-nlp/ORZ-Math-57K-R1 \
+   --prompt_data ./orz-math-57k-distill.json \
    --input_key input \
    --label_key ground_truth_answer \
    --save_steps 10 \
@@ -53,4 +53,4 @@ ray job submit --address="http://127.0.0.1:8265" \
    --packing_samples \
    --enforce_eager \
    --vllm_enable_sleep \
-   --remote_rm_url /apps/OpenRLHF/examples/scripts/r1_reward_func.py
+   --remote_rm_url r1_reward_func.py
