@@ -83,12 +83,16 @@ OpenRLHF provides three different data processing methods:
 2. Method Two: Use the `--input_template` parameter to use a custom template
 3. Method Three: Pre-process the dataset offline and compose prompts according to custom formats
 
-### Processing Training and Validation Data
+### Processing Training Data
 
 This section uses Method Three as an example, pre-processing the dataset offline and composing prompts according to custom formats.
-Using the ORZ dataset [ORZ dataset](https://github.com/OpenRLHF/OpenRLHF/tree/main/openrlhf/datasets)
 
-For complete data processing logic, refer to [prepare_dataset.py](./prepare_dataset.py). The core processing logic is:
+The dataset processing flow is as follows:
+
+1. First, download the ORZ dataset to the local path [ORZ dataset](https://github.com/Open-Reasoner-Zero/Open-Reasoner-Zero/blob/main/data/orz_math_57k_collected.json)
+2. Execute the script `python prepare_dataset.py`
+
+The core processing logic is as follows:
 
 ```python
 user_prompt = """Please reason step by step, and put your final answer within \\boxed{}."""

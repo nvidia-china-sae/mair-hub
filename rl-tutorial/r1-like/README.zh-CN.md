@@ -85,12 +85,17 @@ OpenRLHF 提供了三种不同的数据处理方式：
 2. 方式二：使用 `--input_template` 参数，从而使用自定义 template
 3. 方式三：预先离线处理数据集，按照自定义格式合成prompt
 
-### 处理训练数据和验证数据
+### 处理训练数据
 
 本节以方式三为例，预先离线处理数据集，并按照自定义格式合成 prompt。
-使用ORZ数据集 [ORZ dataset](https://github.com/OpenRLHF/OpenRLHF/tree/main/openrlhf/datasets)
 
-完整的数据处理逻辑参考 [prepare_dataset.py](./prepare_dataset.py), 核心的处理逻辑为：
+处理数据集的流程如下：
+
+1. 首先需要下载 ORZ 数据集到本路径[ORZ dataset](https://github.com/Open-Reasoner-Zero/Open-Reasoner-Zero/blob/main/data/orz_math_57k_collected.json)
+2. 执行脚本 `python prepare_dataset.py`
+
+
+其中，核心的处理逻辑如下：
 
 ```python
 
@@ -127,6 +132,8 @@ formatted_prompt = tokenizer.apply_chat_template(
 字段说明：
 - `input`: 模型输入的内容，包括输入模版、prompt 和用户问题
 - `ground_truth_answer`: 问题的答案
+
+
 
 准备好数据集后，在启动脚本中按照如下设置：
 ```bash

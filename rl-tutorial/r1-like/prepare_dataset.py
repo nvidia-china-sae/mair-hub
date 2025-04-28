@@ -1,3 +1,17 @@
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from datasets import load_dataset
 import json
 from transformers import AutoTokenizer
@@ -22,8 +36,8 @@ def download_and_save_dataset(dataset, split="train", output_file="dataset.json"
             elif i["from"] == "assistant" or i["from"] == "Assistant":
                 answer = i["ground_truth"]["value"]
 
-        # 使用 Qwen 的对话模板格式化问答对
-        # 构建对话格式
+        # Use Qwen's dialogue template to format the Q&A pair
+        # Construct dialogue format
         if question != "" and answer != "":
             messages = [
                 {"role": "user", "content": question + " " + user_prompt},
@@ -31,24 +45,24 @@ def download_and_save_dataset(dataset, split="train", output_file="dataset.json"
         else:
             continue
         
-        # 应用 Qwen 的对话模板
+        # Apply Qwen's dialogue template
         formatted_prompt = tokenizer.apply_chat_template(
             messages,
             tokenize=False,
             add_generation_prompt=True
         )
         # print("formatted_prompt: ", formatted_prompt)
-        # 将格式化后的对话添加到数据列表
+        # Add the formatted dialogue to the data list
         data_list.append({
             "input": formatted_prompt,
             "ground_truth_answer": answer,
             "problem": question,
         })
-    # 将数据保存为 JSON 文件
+    # Save the data as a JSON file
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(data_list, f, ensure_ascii=False, indent=2)
     
-    print(f"数据集已保存至 {output_file}")
+    print(f"Dataset saved to {output_file}")
 
 if __name__ == "__main__":
 
