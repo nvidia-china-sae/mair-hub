@@ -1,2 +1,2 @@
 vlm-R1/data/aime-2024.parquet filter=lfs diff=lfs merge=lfs -text
-vlm-R1/data/multimodal.parquet filter=lfs diff=lfs merge=lfs -text
+vlm-R1/data/*.parquet filter=lfs diff=lfs merge=lfs -text
