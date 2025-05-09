@@ -2,12 +2,24 @@
 
 在本 Tutorial 中我们会使用 veRL 框架在数学领域来复现 DeepSeek-R1-Zero 的强化学习训练过程。内容包括了：
 
-- [veRL 介绍](#veRL-介绍)
-- [准备数据](#准备数据)
-- [自定义 Reward function 和 Prompt Template](#自定义-reward-function-和-prompt-template)
-- [启动训练](#启动训练)
-- [实验曲线](#实验曲线)
-- [评估实验](#评估实验)
+- [R1-Zero 的 RL Tutorial](#r1-zero-的-rl-tutorial)
+  - [veRL 介绍](#verl-介绍)
+    - [准备环境](#准备环境)
+    - [关键参数说明](#关键参数说明)
+  - [准备数据](#准备数据)
+    - [数据格式](#数据格式)
+    - [处理数据](#处理数据)
+    - [数据集说明](#数据集说明)
+  - [自定义 Reward function 和 Prompt Template](#自定义-reward-function-和-prompt-template)
+    - [Reward function](#reward-function)
+    - [Prompt Template](#prompt-template)
+  - [启动训练](#启动训练)
+  - [实验曲线](#实验曲线)
+  - [评估实验](#评估实验)
+    - [评估设置](#评估设置)
+    - [评估结果](#评估结果)
+    - [反思行为分析](#反思行为分析)
+    - [Case Study](#case-study)
 
 ## veRL 介绍
 
@@ -48,6 +60,8 @@ pip install math-verify[antlr4_9_3]
 | --- | --- | --- |
 | 基本参数 | actor_rollout_ref.model.path | 原始模型参数路径 |
 | 基本参数 | data.train_files<br>data.val_files | 训练和验证数据路径。单路径如 data/orz/train.parquet，也支持传入多个路径如 "[data/orz/train.parquet,data/gsm/train.parquet]" |
+| 基本参数 | data.custom_cls.path | 包含自定义数据集类的文件路径 |
+| 基本参数 | data.custom_cls.name | 指定文件中数据集类的名称 |
 | 训练参数 | trainer.total_epochs | 在整个训练集上训练的 epoch 数量 |
 | 训练参数 | data.train_batch_size | 每个 RL step 消耗的 prompt 的数量 |
 | 训练参数 | actor_rollout_ref.rollout.n | 在 rollout 阶段，为每个 prompt 生成多少个 responses。对于 GRPO 和 GLOO 必须要大于 1 |
@@ -149,27 +163,12 @@ python test_math500.py
     "The Assistant first thinks about the reasoning process in the mind and then provides the User with the answer. "
     "The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e., <think> reasoning process here </think> <answer> answer here </answer>. "
     "User: You must put your answer inside <answer> </answer> tags, i.e., <answer> answer here </answer>. "
-    "{prompt}\n"
+    "And your final answer will be extracted automatically by the \\boxed{{}} tag. {prompt}\n"
     "Assistant: <think>"
 )
 ```
 
-但是 veRL 目前的版本中仅支持tokenizer.apply_chat_template 来处理 prompt，因此需要修改这部分的代码：
-
-首先，将 `r1_dataset.py` 放在 `verl/utils/dataset` 目录下。
-
-然后，在 `verl/trainer/ppo/ray_trainer.py` 中导入 `R1Dataset`并替换 `RLHFDataset`。
-
-```python
-from verl.utils.dataset.r1_dataset import R1Dataset
-
-...
-
-def _create_dataloader(self):
-    self.train_dataset = R1Dataset(....
-
-    self.val_dataset = R1Dataset(...
-```
+提示模板和处理逻辑在 [r1_dataset.py](./r1_dataset.py) 中实现，并在训练过程中传递给veRL。
 
 ## 启动训练
 

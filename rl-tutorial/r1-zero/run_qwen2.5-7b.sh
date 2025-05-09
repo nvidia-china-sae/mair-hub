@@ -2,7 +2,7 @@ set -x
 
 script_dir="$(dirname "$(readlink -f "$0")")"
 
-python3 -m verl.trainer.main_ppo \
+python -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files=$HOME/data/math-cl/train.parquet \
     data.val_files="[$HOME/data/aime24/test.parquet,$HOME/data/math500/test.parquet]" \
@@ -11,6 +11,9 @@ python3 -m verl.trainer.main_ppo \
     data.max_prompt_length=1024 \
     data.max_response_length=8192 \
     data.shuffle=False \
+    data.custom_cls.path=${script_dir}/r1_dataset.py \
+    data.custom_cls.name=R1Dataset \
+    data.filter_overlong_prompts=True \
     actor_rollout_ref.rollout.enforce_eager=False \
     actor_rollout_ref.rollout.free_cache_engine=False \
     actor_rollout_ref.model.path=Qwen/Qwen2.5-7B \
@@ -32,6 +35,9 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
     actor_rollout_ref.rollout.temperature=1.0 \
     actor_rollout_ref.rollout.n=32 \
+    actor_rollout_ref.rollout.val_kwargs.n=32 \
+    actor_rollout_ref.rollout.val_kwargs.temperature=1.0 \
+    actor_rollout_ref.rollout.val_kwargs.do_sample=True \
     actor_rollout_ref.rollout.enable_chunked_prefill=False \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=4 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
@@ -46,4 +52,5 @@ python3 -m verl.trainer.main_ppo \
     trainer.nnodes=1 \
     trainer.save_freq=10 \
     trainer.test_freq=10 \
+    trainer.validation_data_dir=${script_dir}/val_data_logging \
     trainer.total_epochs=1 $@
