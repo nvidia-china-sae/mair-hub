@@ -40,6 +40,9 @@ wandb login
 huggingface-cli login
 ```
 
+### 关键参数说明
+
+关于 veRL 的关键参数说明，请参考 R1-Zero 教程中的[关键参数说明](../r1-zero/README.zh-CN.md#关键参数说明)。
 
 ## 数据准备
 
@@ -135,6 +138,8 @@ veRL 目前仅支持 parquet 格式的数据文件，并且数据需满足特定
 You first think about the reasoning process as an internal monologue and then provide the user with the answer. Respond in the following format: <think>\n...\n</think>\n<answer>\n...\n</answer>.
 ```
 聊天模版默认使用模型Tokenizer的Chat Template。
+
+**注：`data`目录下提供的数据已完成处理，可以直接使用。**
 
 ## 训练
 

@@ -39,6 +39,9 @@ wandb login
 # If you're using HuggingFace datasets that require authentication, you need to login to your hf account
 huggingface-cli login
 ```
+### Key Parameters
+
+For key parameter descriptions of veRL, please refer to [Key Parameters](../r1-zero/README.md#key-parameters) in R1-Zero Tutorial.
 
 ## Data Preparation
 
@@ -111,6 +114,8 @@ Text training uses the [Skywork-OR1-RL-Data](https://huggingface.co/datasets/Sky
 
 #### Multimodal Dataset
 The multimodal training set is integrated from multiple open-source datasets, including [geometry3k](https://huggingface.co/datasets/hiyouga/geometry3k), [MathVision](https://huggingface.co/datasets/MathLLMs/MathVision), [polymath](https://huggingface.co/datasets/him1411/polymath), [SceMQA-main](https://huggingface.co/datasets/Haozy/SceMQA-main), and [We-Math](https://huggingface.co/datasets/We-Math/We-Math). A total of approximately 11K samples covering various mathematical problems involving images, text, and image-text combinations.
+
+**Note: The data in the `data` directory has been pre-processed and is ready to use.**
 
 ## Custom Reward Function and Prompt Template
 
