@@ -62,6 +62,8 @@ pip install math-verify[antlr4_9_3]
 | Basic Parameters | data.train_files<br>data.val_files | Training and validation data paths. Single path like data/orz/train.parquet, also supports multiple paths like "[data/orz/train.parquet,data/gsm/train.parquet]" |
 | Basic Parameters | data.custom_cls.path | The path to the file containing your customized dataset class |
 | Basic Parameters | data.custom_cls.name | The name of the dataset class within the specified file |
+| Basic Parameters | custom_reward_function.path | The path to the file containing your customized reward function |
+| Basic Parameters | custom_reward_function.name | The name of the reward function within the specified file. Default is 'compute_score' |
 | Training Parameters | trainer.total_epochs | Number of epochs to train on the entire training set |
 | Training Parameters | data.train_batch_size | Number of prompts consumed in each RL step |
 | Training Parameters | actor_rollout_ref.rollout.n | How many responses to generate for each prompt during rollout. Must be greater than 1 for GRPO and GLOO |

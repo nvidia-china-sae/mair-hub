@@ -62,6 +62,8 @@ pip install math-verify[antlr4_9_3]
 | 基本参数 | data.train_files<br>data.val_files | 训练和验证数据路径。单路径如 data/orz/train.parquet，也支持传入多个路径如 "[data/orz/train.parquet,data/gsm/train.parquet]" |
 | 基本参数 | data.custom_cls.path | 包含自定义数据集类的文件路径 |
 | 基本参数 | data.custom_cls.name | 指定文件中数据集类的名称 |
+| 基本参数 | custom_reward_function.path | 包含自定义奖励函数的文件路径  |
+| 基本参数 | custom_reward_function.name | 指定文件中奖励函数的名称。默认为 'compute_score' |
 | 训练参数 | trainer.total_epochs | 在整个训练集上训练的 epoch 数量 |
 | 训练参数 | data.train_batch_size | 每个 RL step 消耗的 prompt 的数量 |
 | 训练参数 | actor_rollout_ref.rollout.n | 在 rollout 阶段，为每个 prompt 生成多少个 responses。对于 GRPO 和 GLOO 必须要大于 1 |
