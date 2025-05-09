@@ -13,6 +13,7 @@ In this tutorial, we will use the veRL framework to reproduce the reinforcement 
   - [Custom Reward Function and Prompt Template](#custom-reward-function-and-prompt-template)
     - [Reward Function](#reward-function)
     - [Prompt Template](#prompt-template)
+  - [Starting Training](#starting-training)
   - [Experiment Curves](#experiment-curves)
   - [Evaluation Experiments](#evaluation-experiments)
     - [Evaluation Setup](#evaluation-setup)
@@ -167,6 +168,8 @@ Referencing the Open-Reasoner-Zero paper, we use the following prompt template:
 ```
 
 The prompt template and processing logic is implemented in [r1_dataset.py](./r1_dataset.py) and passed to veRL during training.
+
+## Starting Training
 
 The training script is available in [run_qwen2.5-7b.sh](./run_qwen2.5-7b.sh). You can refer to this script for training.
 
