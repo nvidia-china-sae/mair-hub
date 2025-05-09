@@ -4,16 +4,17 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
 NNODES=1
 project_name='DAPO'
-exp_name='DAPO-Qwen2.5-VL-7B-Vision'
-MODEL_PATH=Qwen/Qwen2.5-VL-7B-Instruct
+exp_name='DAPO-Qwen2.5-VL-3B-Vision-Multimodal'
+MODEL_PATH=Qwen/Qwen2.5-VL-3B-Instruct
 WORKING_DIR=/workspace/verl
 CKPTS_DIR=${WORKING_DIR}/verl/ckpts/${project_name}/${exp_name}
+# Multimodal
 TRAIN_FILE="[${SCRIPT_DIR}/data/we-math.parquet,${SCRIPT_DIR}/data/geo3k.parquet,${SCRIPT_DIR}/data/SceMQA.parquet,${SCRIPT_DIR}/data/math-vision.parquet,${SCRIPT_DIR}/data/polymath.parquet]"
-TEST_FILE=${SCRIPT_DIR}/data/aime-2024.parquet
+TEST_FILE="[${SCRIPT_DIR}/data/aime24.parquet,${SCRIPT_DIR}/data/math200.parquet]"
 
 RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --runtime-env="${WORKING_DIR}/verl/trainer/runtime_env.yaml" \
     --working-dir "${WORKING_DIR}" \
-    -- python3 -m recipe.dapo.src.main_dapo \
+    -- python3 -m src.main_dapo \
     data.train_files="${TRAIN_FILE}" \
     data.val_files="${TEST_FILE}" \
     data.prompt_key=prompt \
@@ -76,9 +77,9 @@ RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --runtime-env="${WORKING_DIR}
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     actor_rollout_ref.ref.ulysses_sequence_parallel_size=1 \
     actor_rollout_ref.actor.fsdp_config.fsdp_size=-1 \
-    reward_model.reward_manager=dapo \
+    reward_model.reward_manager=async_dapo \
     reward_model.overlong_buffer.enable=True \
-    reward_model.overlong_buffer.len=$((1024 * 1)) \
+    reward_model.overlong_buffer.len=$((1024 * 2)) \
     reward_model.overlong_buffer.penalty_factor=1.0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name="${project_name}" \
@@ -88,9 +89,10 @@ RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --runtime-env="${WORKING_DIR}
     trainer.val_before_train=True \
     trainer.test_freq=10 \
     trainer.save_freq=10 \
-    trainer.total_epochs=10 \
+    trainer.total_epochs=5 \
     trainer.default_local_dir="${CKPTS_DIR}" \
     trainer.resume_mode=auto \
     trainer.max_actor_ckpt_to_keep=3 \
-    custom_reward_function.path=${SCRIPT_DIR}/math_verify_for_dapo.py \
-    custom_reward_function.name=compute_score
+    custom_reward_function.path=${SCRIPT_DIR}/src/xverify_for_dapo.py \
+    custom_reward_function.name=compute_score \
+    +custom_reward_function.url=${XVERIFY_URL} 
