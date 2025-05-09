@@ -2,7 +2,7 @@ set -x
 
 script_dir="$(dirname "$(readlink -f "$0")")"
 
-python -m verl.trainer.main_ppo \
+python3 -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files=$HOME/data/math-cl/train.parquet \
     data.val_files="[$HOME/data/aime24/test.parquet,$HOME/data/math500/test.parquet]" \
@@ -52,5 +52,4 @@ python -m verl.trainer.main_ppo \
     trainer.nnodes=1 \
     trainer.save_freq=10 \
     trainer.test_freq=10 \
-    trainer.validation_data_dir=${script_dir}/val_data_logging \
     trainer.total_epochs=1 $@

@@ -167,7 +167,7 @@ Referencing the Open-Reasoner-Zero paper, we use the following prompt template:
 )
 ```
 
-The prompt template and processing logic is implemented in [r1_dataset.py](./r1_dataset.py) and passed to veRL during training.
+The customized prompt template and processing logic is implemented in [r1_dataset.py](./r1_dataset.py) which is passed to veRL during training.
 
 ## Starting Training
 
