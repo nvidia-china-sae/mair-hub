@@ -1,4 +1,4 @@
-# Copyright 2024 Bytedance Ltd. and/or its affiliates
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ from verl.utils.reward_score import _default_compute_score
 
 
 async def single_compute_score(evaluation_func, data_source, solution_str, ground_truth, extra_info, executor, timeout=300.0):
-    """异步处理单个计算任务"""
+    """Asynchronously process a single computation task"""
     loop = asyncio.get_running_loop()
     try:
         task = asyncio.wait_for(
@@ -36,15 +36,15 @@ async def single_compute_score(evaluation_func, data_source, solution_str, groun
         )
         return await task
     except asyncio.TimeoutError:
-        print(f"Error: 计算超时: {solution_str[:30]}...")
-        return {"score": 0.0, "error": "计算超时"}
+        print(f"Error: Computation timeout: {solution_str[:30]}...")
+        return {"score": 0.0, "error": "Computation timeout"}
     except Exception as e:
-        print(f"Error: 计算错误: {solution_str[:30]}..., 错误: {e}")
+        print(f"Error: Computation error: {solution_str[:30]}..., error: {e}")
         return {"score": 0.0, "error": str(e)}
 
 
 async def parallel_compute_scores(evaluation_func, items, executor, max_resp_len=None, overlong_buffer_cfg=None):
-    """并行处理多个计算任务"""
+    """Process multiple computation tasks in parallel"""
     tasks = []
     
     for item in items:
@@ -59,27 +59,27 @@ async def parallel_compute_scores(evaluation_func, items, executor, max_resp_len
         )
         tasks.append(task)
     
-    # 同时执行所有任务
+    # Execute all tasks simultaneously
     try:
         results = await asyncio.gather(*tasks, return_exceptions=True)
     except Exception as e:
-        print(f"Error: 并行计算出错: {e}")
-        # 如果出错，尝试终止所有进程
+        print(f"Error: Parallel computation failed: {e}")
+        # If error occurs, try to terminate all processes
         for pid, proc in executor._processes.items():
             try:
                 proc.kill()
             except Exception as kill_err:
-                print(f"Error: 无法终止进程: {kill_err}")
+                print(f"Error: Unable to terminate process: {kill_err}")
         raise
     
-    # 处理结果
+    # Process results
     processed_results = []
     for i, (result, item) in enumerate(zip(results, items)):
         if isinstance(result, Exception) or result is None:
             reward = 0.0
-            extra_info_dict = {"score": reward, "error": str(result) if result else "空结果"}
+            extra_info_dict = {"score": reward, "error": str(result) if result else "Empty result"}
         else:
-            # 处理返回结果
+            # Handle returned result
             if isinstance(result, dict):
                 reward = result.get("score", 0.0)
                 extra_info_dict = result
@@ -87,7 +87,7 @@ async def parallel_compute_scores(evaluation_func, items, executor, max_resp_len
                 reward = float(result)
                 extra_info_dict = {"score": reward}
         
-        # 处理超长惩罚
+        # Handle overlong penalty
         if overlong_buffer_cfg and overlong_buffer_cfg.get("enable") and max_resp_len is not None:
             overlong_buffer_len = overlong_buffer_cfg.get("len", 0)
             expected_len = max_resp_len - overlong_buffer_len
@@ -114,7 +114,7 @@ async def parallel_compute_scores(evaluation_func, items, executor, max_resp_len
 
 
 class AsyncDAPORewardManager:
-    """使用真正异步处理的奖励管理器。"""
+    """Reward manager using true asynchronous processing."""
 
     def __init__(
         self,
@@ -137,16 +137,16 @@ class AsyncDAPORewardManager:
         self.base_url = base_url
         
         if self.base_url is None:
-            raise ValueError("base_url必须提供")
-        print(f"AsyncDAPO初始化，base_url: {self.base_url}, max_workers: {self.max_workers}")
+            raise ValueError("base_url must be provided")
+        print(f"AsyncDAPO initialized, base_url: {self.base_url}, max_workers: {self.max_workers}")
         
         if self.overlong_buffer_cfg is not None:
             assert self.max_resp_len is not None, (
-                f"如果设置了{overlong_buffer_cfg=}，则必须提供max_resp_len，但获得了None"
+                f"If {overlong_buffer_cfg=} is set, max_resp_len must be provided, but got None"
             )
 
     def _prepare_items(self, data):
-        """准备待处理的数据项"""
+        """Prepare items to be processed"""
         items = []
         
         for i in range(len(data)):
@@ -161,7 +161,7 @@ class AsyncDAPORewardManager:
             valid_response_length = data_item.batch["attention_mask"][prompt_length:].sum()
             valid_response_ids = response_ids[:valid_response_length]
 
-            # 解码
+            # Decode
             prompt_str = self.tokenizer.decode(valid_prompt_ids, skip_special_tokens=True)
             response_str = self.tokenizer.decode(valid_response_ids, skip_special_tokens=True)
             eos_token = self.tokenizer.eos_token
@@ -187,10 +187,10 @@ class AsyncDAPORewardManager:
         return items
 
     def __call__(self, data: DataProto, return_dict: bool = False):
-        """根据可用数据集逐步扩展此函数"""
+        """Extend this function step by step according to the available dataset"""
         total_start_time = time.time()
 
-        # 如果有rm_scores，直接返回
+        # If rm_scores exists, return directly
         if "rm_scores" in data.batch.keys():
             if return_dict:
                 return {"reward_tensor": data.batch["rm_scores"]}
@@ -201,10 +201,10 @@ class AsyncDAPORewardManager:
         reward_extra_info = defaultdict(list)
         already_print_data_sources = {}
         
-        # 准备数据项
+        # Prepare items
         items = self._prepare_items(data)
         
-        # 异步处理所有样本
+        # Asynchronously process all samples
         with ProcessPoolExecutor(max_workers=self.max_workers) as executor:
             try:
                 results = asyncio.run(
@@ -217,7 +217,7 @@ class AsyncDAPORewardManager:
                     )
                 )
                 
-                # 处理结果
+                # Process results
                 for result in results:
                     i = result["i"]
                     valid_response_length = result["valid_response_length"]
@@ -225,14 +225,14 @@ class AsyncDAPORewardManager:
                     extra_info = result["extra_info"]
                     data_source = result["data_source"]
                     
-                    # 更新reward_tensor
+                    # Update reward_tensor
                     reward_tensor[i, valid_response_length - 1] = reward
                     
-                    # 更新extra_info
+                    # Update extra_info
                     for key, value in extra_info.items():
                         reward_extra_info[key].append(value)
                     
-                    # 处理打印逻辑
+                    # Print logic
                     if data_source not in already_print_data_sources:
                         already_print_data_sources[data_source] = 0
                     
@@ -245,11 +245,11 @@ class AsyncDAPORewardManager:
                             print(f"[{key}]", value)
                 
             except Exception as e:
-                print(f"处理样本时发生错误: {e}")
-                # 如果出错，确保我们仍然返回一个合理的结果
+                print(f"Error occurred while processing samples: {e}")
+                # If error occurs, ensure we still return a reasonable result
         
         total_time = time.time() - total_start_time
-        print(f"总处理时间: {total_time:.2f}秒")
+        print(f"Total processing time: {total_time:.2f} seconds")
         
         if return_dict:
             return {

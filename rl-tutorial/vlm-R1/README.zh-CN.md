@@ -33,9 +33,6 @@ docker run --runtime=nvidia -it --rm --shm-size="10g" --cap-add=SYS_ADMIN \
 # install the nightly version (recommended)
 git clone https://github.com/volcengine/verl && cd verl && pip3 install -e .
 
-# 我们后续的实验是在数学任务上进行的，因此还需安装 math-verify 来作为奖励函数
-pip install math-verify[antlr4_9_3]
-
 # 如果需要使用 wandb 来监控实验，需要 wandb login 来登录
 wandb login
 
@@ -123,7 +120,7 @@ veRL 目前仅支持 parquet 格式的数据文件，并且数据需满足特定
 
 ### Reward Function
 
-最新版 veRL 支持通过传入 Python 文件的方式自定义 Reward function。在本实验中，我们采用 [math_verify_for_dapo.py](./src/math_verify_for_dapo.py) 作为奖励函数。
+最新版 veRL 支持通过传入 Python 文件的方式自定义 Reward function。在本实验中，我们采用 [xverify_for_dapo.py](./src/xverify_for_dapo.py) 作为奖励函数。
 
 其核心逻辑如下：
 - 首先检验模型输出是否符合 <think>...</think><answer>...</answer> 格式，若不符合则返回 -1.0；

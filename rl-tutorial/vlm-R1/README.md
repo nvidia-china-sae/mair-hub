@@ -33,9 +33,6 @@ After logging into the container, install verl and necessary dependencies:
 # install the nightly version (recommended)
 git clone https://github.com/volcengine/verl && cd verl && pip3 install -e .
 
-# Our experiments are conducted on mathematical tasks, so we need to install math-verify as a reward function
-pip install math-verify[antlr4_9_3]
-
 # If you need to use wandb to monitor experiments, you need to login with wandb
 wandb login
 
@@ -119,7 +116,7 @@ The multimodal training set is integrated from multiple open-source datasets, in
 
 ### Reward Function
 
-The latest version of veRL supports customizing reward functions by passing in Python files. In this experiment, we use [math_verify_for_dapo.py](./src/math_verify_for_dapo.py) as the reward function.
+The latest version of veRL supports customizing reward functions by passing in Python files. In this experiment, we use [xverify_for_dapo.py](./src/xverify_for_dapo.py) as the reward function.
 
 Its core logic is as follows:
 - First, check if the model output conforms to the <think>...</think><answer>...</answer> format; if not, return -1.0;
