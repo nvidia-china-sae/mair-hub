@@ -60,6 +60,10 @@ pip install math-verify[antlr4_9_3]
 | --- | --- | --- |
 | Basic Parameters | actor_rollout_ref.model.path | Original model parameter path |
 | Basic Parameters | data.train_files<br>data.val_files | Training and validation data paths. Single path like data/orz/train.parquet, also supports multiple paths like "[data/orz/train.parquet,data/gsm/train.parquet]" |
+| Basic Parameters | data.custom_cls.path | The path to the file containing your customized dataset class |
+| Basic Parameters | data.custom_cls.name | The name of the dataset class within the specified file |
+| Basic Parameters | custom_reward_function.path | The path to the file containing your customized reward function |
+| Basic Parameters | custom_reward_function.name | The name of the reward function within the specified file. Default is 'compute_score' |
 | Training Parameters | trainer.total_epochs | Number of epochs to train on the entire training set |
 | Training Parameters | data.train_batch_size | Number of prompts consumed in each RL step |
 | Training Parameters | actor_rollout_ref.rollout.n | How many responses to generate for each prompt during rollout. Must be greater than 1 for GRPO and GLOO |
@@ -160,27 +164,12 @@ Referencing the Open-Reasoner-Zero paper, we use the following prompt template:
     "The Assistant first thinks about the reasoning process in the mind and then provides the User with the answer. "
     "The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e., <think> reasoning process here </think> <answer> answer here </answer>. "
     "User: You must put your answer inside <answer> </answer> tags, i.e., <answer> answer here </answer>. "
-    "{prompt}\n"
+    "And your final answer will be extracted automatically by the \\boxed{{}} tag. {prompt}\n"
     "Assistant: <think>"
 )
 ```
 
-However, the current version of veRL only supports using tokenizer.apply_chat_template to process prompts, so we need to modify this part of the code:
-
-First, place `r1_dataset.py` in the `verl/utils/dataset` directory.
-
-Then, import `R1Dataset` and replace `RLHFDataset` in `verl/trainer/ppo/ray_trainer.py`:
-
-```python
-from verl.utils.dataset.r1_dataset import R1Dataset
-
-...
-
-def _create_dataloader(self):
-    self.train_dataset = R1Dataset(....
-
-    self.val_dataset = R1Dataset(...
-```
+The customized prompt template and processing logic is implemented in [r1_dataset.py](./r1_dataset.py) which is passed to veRL during training.
 
 ## Starting Training
 
