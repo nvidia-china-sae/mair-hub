@@ -264,7 +264,7 @@ python3 -m lmms_eval \
   </tr>
   <tr>
     <td> Qwen2.5-VL-3B-Instruct </td>
-    <td style="text-align: center;">29.3</td>
+    <td style="text-align: center;">32.8</td>
     <td style="text-align: center;">56.6</td>
     <td style="text-align: center;">1138.6</td>
     <td style="text-align: center;">309.6</td>
