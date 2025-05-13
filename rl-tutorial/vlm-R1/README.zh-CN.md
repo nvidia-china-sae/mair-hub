@@ -117,7 +117,7 @@ veRL 目前仅支持 parquet 格式的数据文件，并且数据需满足特定
 文本训练使用 [Skywork-OR1-RL-Data](https://huggingface.co/datasets/Skywork/Skywork-OR1-RL-Data) 数据集，这是一个高质量的纯文本数据集，包含大量数学任务样本。我们的实验表明，即使仅使用纯文本数据训练，也能有效提升多模态模型在视觉任务上的表现。
 
 #### 多模态数据集
-多模态训练集整合自多个开源数据集，包括 [geometry3k](https://huggingface.co/datasets/hiyouga/geometry3k)、[MathVision](https://huggingface.co/datasets/MathLLMs/MathVision)、[polymath](https://huggingface.co/datasets/him1411/polymath)、[SceMQA-main](https://huggingface.co/datasets/Haozy/SceMQA-main) 以及 [We-Math](https://huggingface.co/datasets/We-Math/We-Math)。总计约 11K 个样本，涵盖图像、文本及图文结合的各类数学问题。
+多模态训练集整合自多个开源数据集，包括 [geometry3k](https://huggingface.co/datasets/hiyouga/geometry3k)、[MathVision](https://huggingface.co/datasets/MathLLMs/MathVision)、[polymath](https://huggingface.co/datasets/him1411/polymath)、[SceMQA-main](https://huggingface.co/datasets/Haozy/SceMQA-main) 以及 [We-Math](https://huggingface.co/datasets/We-Math/We-Math)。总计约 12K 个样本，涵盖图像、文本及图文结合的各类数学问题。
 
 ## 自定义 Reward Function 与 Prompt Template
 
@@ -268,7 +268,7 @@ python3 -m lmms_eval \
   </tr>
   <tr>
     <td> Qwen2.5-VL-3B-Instruct </td>
-    <td style="text-align: center;">29.3</td>
+    <td style="text-align: center;">32.8</td>
     <td style="text-align: center;">56.6</td>
     <td style="text-align: center;">1138.6</td>
     <td style="text-align: center;">309.6</td>
