@@ -113,7 +113,7 @@ This tutorial uses two types of datasets for training:
 Text training uses the [Skywork-OR1-RL-Data](https://huggingface.co/datasets/Skywork/Skywork-OR1-RL-Data) dataset, a high-quality text-only dataset containing numerous mathematical task samples. Our experiments show that even training with text-only data can effectively improve the performance of multimodal models on visual tasks.
 
 #### Multimodal Dataset
-The multimodal training set is integrated from multiple open-source datasets, including [geometry3k](https://huggingface.co/datasets/hiyouga/geometry3k), [MathVision](https://huggingface.co/datasets/MathLLMs/MathVision), [polymath](https://huggingface.co/datasets/him1411/polymath), [SceMQA-main](https://huggingface.co/datasets/Haozy/SceMQA-main), and [We-Math](https://huggingface.co/datasets/We-Math/We-Math). A total of approximately 11K samples covering various mathematical problems involving images, text, and image-text combinations.
+The multimodal training set is integrated from multiple open-source datasets, including [geometry3k](https://huggingface.co/datasets/hiyouga/geometry3k), [MathVision](https://huggingface.co/datasets/MathLLMs/MathVision), [polymath](https://huggingface.co/datasets/him1411/polymath), [SceMQA-main](https://huggingface.co/datasets/Haozy/SceMQA-main), and [We-Math](https://huggingface.co/datasets/We-Math/We-Math). A total of approximately 12K samples covering various mathematical problems involving images, text, and image-text combinations.
 
 **Note: The data in the `data` directory has been pre-processed and is ready to use.**
 
