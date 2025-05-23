@@ -39,6 +39,10 @@ wandb login
 # If you're using HuggingFace datasets that require authentication, you need to login to your hf account
 huggingface-cli login
 ```
+
+**After completing the veRL environment setup, please copy all files in this directory to the verl directory to ensure subsequent experiments can proceed normally.**
+
+
 ### Key Parameters
 
 For key parameter descriptions of veRL, please refer to [Key Parameters](../r1-zero/README.md#key-parameters) in R1-Zero Tutorial.
@@ -65,8 +69,10 @@ For text-only data (such as Skywork-OR1), the data format is similar but omits t
         "ground_truth": "3"
     },
     "extra_info": {
+        "index": 1,
+        "split": "train",
         "answer": "3",
-        "split": "train"
+        "question": "Solve this algebra problem: If 3x + 7 = 16, what is the value of x?"
     }
 }
 ```
@@ -88,8 +94,10 @@ In the RL phase of veRL, each multimodal sample should follow the data format be
         "ground_truth": "11"
     },
     "extra_info": {
+        "split": "train",
+        "index": 1,
         "answer": "11",
-        "split": "train"
+        "question": "<image>Find x. Round to the nearest tenth, if necessary."
     }
 }
 ```
@@ -103,7 +111,10 @@ In the RL phase of veRL, each multimodal sample should follow the data format be
 
 ### Data Processing
 
-We need to write corresponding processing scripts for datasets according to the above data format. Specific implementation can refer to the [geometry3k processing script](https://github.com/volcengine/verl/blob/main/examples/data_preprocess/geo3k.py) provided by veRL.
+To ensure datasets conform to our predefined format specifications, raw data needs to be preprocessed and converted. You can execute the following script to complete the preprocessing of all datasets in one go:
+```bash
+bash process_all_datasets.sh
+```
 
 ### Dataset Introduction
 
@@ -113,7 +124,7 @@ This tutorial uses two types of datasets for training:
 Text training uses the [Skywork-OR1-RL-Data](https://huggingface.co/datasets/Skywork/Skywork-OR1-RL-Data) dataset, a high-quality text-only dataset containing numerous mathematical task samples. Our experiments show that even training with text-only data can effectively improve the performance of multimodal models on visual tasks.
 
 #### Multimodal Dataset
-The multimodal training set is integrated from multiple open-source datasets, including [geometry3k](https://huggingface.co/datasets/hiyouga/geometry3k), [MathVision](https://huggingface.co/datasets/MathLLMs/MathVision), [polymath](https://huggingface.co/datasets/him1411/polymath), [SceMQA-main](https://huggingface.co/datasets/Haozy/SceMQA-main), and [We-Math](https://huggingface.co/datasets/We-Math/We-Math). A total of approximately 11K samples covering various mathematical problems involving images, text, and image-text combinations.
+The multimodal training set is integrated from multiple open-source datasets, including [geometry3k](https://huggingface.co/datasets/hiyouga/geometry3k), [MathVision](https://huggingface.co/datasets/MathLLMs/MathVision), [polymath](https://huggingface.co/datasets/him1411/polymath), and [We-Math](https://huggingface.co/datasets/We-Math/We-Math). A total of approximately 11K samples covering various mathematical problems involving images, text, and image-text combinations.
 
 **Note: The data in the `data` directory has been pre-processed and is ready to use.**
 

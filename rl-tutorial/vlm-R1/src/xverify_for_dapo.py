@@ -326,9 +326,9 @@ def compute_score(data_source, solution_str, ground_truth, extra_info):
         }
 
     # 如果 ground_truth 和 pred pred2 都是纯数字，且仍旧没有通过 rule-based verification，则返回 -1
-    if ground_truth.replace(".", "").isdigit() and \
-        ((pred is not None and pred.replace(".", "").isdigit()) or \
-         (pred2 is not None and pred2.replace(".", "").isdigit())):
+    if ground_truth.isdigit() and \
+        ((pred is not None and pred.isdigit()) or \
+         (pred2 is not None and pred2.isdigit())):
         if do_print:
             print(f"[Incorrect][Rule-based] Answer: {final_answer}, GT: {ground_truth}, Question: {extra_info['question']}")
         return {

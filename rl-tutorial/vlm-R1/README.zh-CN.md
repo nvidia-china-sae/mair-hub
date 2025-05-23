@@ -39,6 +39,7 @@ wandb login
 # 如果使用的 HuggingFace 数据集需要认证信息，则需要 huggingface-cli login 来登录 hf 账户
 huggingface-cli login
 ```
+**完成 veRL 环境配置后，请将本目录下的所有文件拷贝至 verl 目录中，以确保后续实验能够正常进行。**
 
 ### 关键参数说明
 
@@ -66,8 +67,10 @@ veRL 目前仅支持 parquet 格式的数据文件，并且数据需满足特定
         "ground_truth": "3"
     },
     "extra_info": {
-        "answer": "3",
-        "split": "train"
+        "index": 1,
+        "split": "math",
+        "answer": 3,
+        "question": "Solve this algebra problem: If 3x + 7 = 16, what is the value of x?"
     }
 }
 ```
@@ -90,8 +93,11 @@ veRL 目前仅支持 parquet 格式的数据文件，并且数据需满足特定
         "ground_truth": "11"
     },
     "extra_info": {
+        "split": "train",
+        "index": 1,
         "answer": "11",
-        "split": "train"
+        "question": "<image>Find x. Round to the nearest tenth, if necessary."
+
     }
 }
 ```
@@ -105,19 +111,21 @@ veRL 目前仅支持 parquet 格式的数据文件，并且数据需满足特定
 
 ### 数据处理
 
-我们需要根据上述数据格式为数据集编写相应的处理脚本。具体实现可以参考 veRL 官方提供的 [geometry3k 处理脚本](https://github.com/volcengine/verl/blob/main/examples/data_preprocess/geo3k.py)。
+为了确保数据集符合我们预定义的格式规范，需要对原始数据进行预处理和转换。您可以通过执行以下脚本一键完成所有数据集的预处理工作：
+```bash
+bash process_all_datasets.sh
+```
 
 ### 数据集介绍
 
 本教程使用了两类数据集进行训练：
 
 
-
 #### 文本数据集
 文本训练使用 [Skywork-OR1-RL-Data](https://huggingface.co/datasets/Skywork/Skywork-OR1-RL-Data) 数据集，这是一个高质量的纯文本数据集，包含大量数学任务样本。我们的实验表明，即使仅使用纯文本数据训练，也能有效提升多模态模型在视觉任务上的表现。
 
 #### 多模态数据集
-多模态训练集整合自多个开源数据集，包括 [geometry3k](https://huggingface.co/datasets/hiyouga/geometry3k)、[MathVision](https://huggingface.co/datasets/MathLLMs/MathVision)、[polymath](https://huggingface.co/datasets/him1411/polymath)、[SceMQA-main](https://huggingface.co/datasets/Haozy/SceMQA-main) 以及 [We-Math](https://huggingface.co/datasets/We-Math/We-Math)。总计约 11K 个样本，涵盖图像、文本及图文结合的各类数学问题。
+多模态训练集整合自多个开源数据集，包括 [geometry3k](https://huggingface.co/datasets/hiyouga/geometry3k)、[MathVision](https://huggingface.co/datasets/MathLLMs/MathVision)、[polymath](https://huggingface.co/datasets/him1411/polymath) 以及 [We-Math](https://huggingface.co/datasets/We-Math/We-Math)。总计约 11K 个样本，涵盖图像、文本及图文结合的各类数学问题。
 
 ## 自定义 Reward Function 与 Prompt Template
 
@@ -139,7 +147,6 @@ You first think about the reasoning process as an internal monologue and then pr
 ```
 聊天模版默认使用模型Tokenizer的Chat Template。
 
-**注：`data`目录下提供的数据已完成处理，可以直接使用。**
 
 ## 训练
 

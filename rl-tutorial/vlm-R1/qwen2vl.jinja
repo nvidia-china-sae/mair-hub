@@ -1,4 +1,7 @@
 {%- for message in messages -%}
+    {%- if loop.first and message['role'] != 'system' -%}
+       {{- '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n' -}}
+    {%- endif -%}
     {{- '<|im_start|>' + message['role'] + '\n' + message['content'] -}}
     {%- if message['role'] == 'user' -%}
         {{- '   You first think about the reasoning process as an internal monologue and then provide the user with the answer. Respond in the following format: <think>\n...\n</think>\n<answer>\n...\n</answer>' -}}

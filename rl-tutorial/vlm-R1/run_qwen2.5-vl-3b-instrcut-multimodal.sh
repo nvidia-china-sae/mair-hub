@@ -7,10 +7,10 @@ project_name='DAPO'
 exp_name='DAPO-Qwen2.5-VL-3B-Vision-Multimodal'
 MODEL_PATH=Qwen/Qwen2.5-VL-3B-Instruct
 WORKING_DIR=/workspace/verl
-CKPTS_DIR=${WORKING_DIR}/verl/ckpts/${project_name}/${exp_name}
+CKPTS_DIR=${WORKING_DIR}/ckpts/${project_name}/${exp_name}
 # Multimodal
-TRAIN_FILE="[${SCRIPT_DIR}/data/we-math.parquet,${SCRIPT_DIR}/data/geo3k.parquet,${SCRIPT_DIR}/data/SceMQA.parquet,${SCRIPT_DIR}/data/math-vision.parquet,${SCRIPT_DIR}/data/polymath.parquet]"
-TEST_FILE="[${SCRIPT_DIR}/data/aime24.parquet,${SCRIPT_DIR}/data/math200.parquet]"
+TRAIN_FILE="[${SCRIPT_DIR}/data/we-math.parquet,${SCRIPT_DIR}/data/geo3k.parquet,${SCRIPT_DIR}/data/math-vision.parquet,${SCRIPT_DIR}/data/polymath.parquet]"
+TEST_FILE="[${SCRIPT_DIR}/data/aime24.parquet,${SCRIPT_DIR}/data/math500.parquet]"
 
 RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --runtime-env="${WORKING_DIR}/verl/trainer/runtime_env.yaml" \
     --working-dir "${WORKING_DIR}" \
