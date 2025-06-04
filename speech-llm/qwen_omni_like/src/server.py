@@ -14,12 +14,6 @@ from transformers import AutoTokenizer
 def get_args():
     parser = argparse.ArgumentParser(description="extract speech code")
     parser.add_argument(
-        "--checkpoint-path",
-        type=str,
-        default=None,
-        help="Checkpoint name or path, default to %(default)r",
-    )
-    parser.add_argument(
         "--prompt-template",
         type=str,
         default=None,

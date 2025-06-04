@@ -837,27 +837,29 @@ def get_model(params):
     if not params.unfreeze_llm:
         for name, param in llm.named_parameters():
             param.requires_grad = False
-    else:
-        if params.use_lora:
-            lora_config = LoraConfig(
-                r=64,
-                lora_alpha=16,
-                target_modules=[
-                    "q_proj",
-                    "k_proj",
-                    "v_proj",
-                    "o_proj",
-                    "up_proj",
-                    "gate_proj",
-                    "down_proj",
-                ],
-                lora_dropout=0.05,
-                task_type="CAUSAL_LM",
-            )
-            llm = get_peft_model(llm, lora_config)
-            llm.print_trainable_parameters()
 
-    llm.config.pad_token_id = tokenizer.pad_token_id
+    if params.use_lora:
+        lora_config = LoraConfig(
+            r=64,
+            lora_alpha=16,
+            target_modules=[
+                "q_proj",
+                "k_proj",
+                "v_proj",
+                "o_proj",
+                "up_proj",
+                "gate_proj",
+                "down_proj",
+            ],
+            lora_dropout=0.05,
+            task_type="CAUSAL_LM",
+        )
+        llm = get_peft_model(llm, lora_config)
+        llm.print_trainable_parameters()
+
+    llm.config.pad_token_id = tokenizer.convert_tokens_to_ids("<|endoftext|>")
+    llm.config.bos_token_id = tokenizer.convert_tokens_to_ids("<|im_start|>")
+    llm.config.eos_token_id = tokenizer.convert_tokens_to_ids("<|im_end|>")
     llm.config.default_speech_token_id = tokenizer.convert_tokens_to_ids(
         DEFAULT_SPEECH_TOKEN
     )

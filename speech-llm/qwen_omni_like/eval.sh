@@ -53,7 +53,7 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
     CUDA_VISIBLE_DEVICES=$id python3 ./src/server.py \
       --speech-encoder-path-or-name models/large-v2.pt  \
       --llm-path-or-name models/Qwen2.5-0.5B-Instruct \
-      --checkpoint-path $exp_dir/checkpoint-10/pytorch_model.bin \
+      --pretrained-model-path $exp_dir/epoch-3/pytorch_model.bin \
       --use-flash-attn True \
       --enable-speech-output False \
       --port $(expr 8000 + $id) \
