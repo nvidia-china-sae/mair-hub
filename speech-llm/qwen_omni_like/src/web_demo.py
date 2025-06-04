@@ -10,138 +10,59 @@ import sherpa_onnx
 import soundfile as sf
 import torch
 import whisper
-#from cosyvoice.cli.cosyvoice import CosyVoice
+from cosyvoice.cli.cosyvoice import CosyVoice2
+from cosyvoice.utils.file_utils import load_wav
 from gradio_client import utils as client_utils
 from model import SPEECH_LLM, EncoderProjector
 from peft import LoraConfig, get_peft_model
-from train import DEFAULT_SPEECH_TOKEN, add_model_arguments
+from train import DEFAULT_SPEECH_TOKEN, add_model_arguments, add_training_arguments, get_model
 from transformers import AutoModelForCausalLM, AutoTokenizer, Qwen2Config
 from whisper_encoder_forward_monkey_patch import replace_whisper_encoder_forward
 
 # https://github.com/FunAudioLLM/CosyVoice/tree/main/third_party
 sys.path.append("/workspace/CosyVoice/third_party/Matcha-TTS")
 
-
-def get_model(params, device="cuda"):
-    """Load and prepare the speech-to-speech model."""
-    if params.remove_whisper_encoder_input_length_restriction:
-        replace_whisper_encoder_forward()
-
-    whisper_model = whisper.load_model(params.speech_encoder_path_or_name, "cpu")
-    speech_encoder = whisper_model.encoder
-    speech_encoder_dim = whisper_model.dims.n_audio_state
-    tokenizer = AutoTokenizer.from_pretrained(params.llm_path_or_name)
-
-    if params.use_flash_attn:
-        attn_implementation = "flash_attention_2"
-    else:
-        attn_implementation = "eager"
-
-    llm = AutoModelForCausalLM.from_pretrained(
-        params.llm_path_or_name,
-        attn_implementation=attn_implementation,
-        torch_dtype=torch.float16,
-    )
-    if params.use_lora:
-        lora_config = LoraConfig(
-            r=64,
-            lora_alpha=16,
-            target_modules=[
-                "q_proj",
-                "k_proj",
-                "v_proj",
-                "o_proj",
-                "up_proj",
-                "gate_proj",
-                "down_proj",
-            ],
-            task_type="CAUSAL_LM",
-        )
-        llm = get_peft_model(llm, lora_config)
-        llm.print_trainable_parameters()
-
-    special_tokens_dict = {"additional_special_tokens": [DEFAULT_SPEECH_TOKEN]}
-    tokenizer.add_special_tokens(special_tokens_dict)
-    llm.config.pad_token_id = tokenizer.convert_tokens_to_ids("<|endoftext|>")
-    llm.config.bos_token_id = tokenizer.convert_tokens_to_ids("<|im_start|>")
-    llm.config.eos_token_id = tokenizer.convert_tokens_to_ids("<|im_end|>")
-
-    llm.config.default_speech_token_id = tokenizer.convert_tokens_to_ids(
-        DEFAULT_SPEECH_TOKEN
-    )
-
-    encoder_projector = EncoderProjector(
-        speech_encoder_dim, llm.config.hidden_size, params.encoder_projector_ds_rate
-    )
-
-    # codec_vocab_size = 4096 + 4
-    codec_vocab_size = 6561 + 4
-    config = Qwen2Config(
-        vocab_size=codec_vocab_size,
-        hidden_size=1024,
-        num_hidden_layers=12,
-        num_attention_heads=16,
-        num_key_value_heads=16,
-        intermediate_size=2048,
-        max_position_embeddings=4096,
-    )
-    codec_lm = AutoModelForCausalLM.from_config(
-        config=config,
-        attn_implementation=attn_implementation,
-        torch_dtype=torch.float16,
-    )
-    codec_lm.resize_token_embeddings(codec_vocab_size)
-    codec_lm.vocab_size = codec_vocab_size
-    codec_lm.config.pad_token_id = codec_vocab_size - 1
-    codec_lm.config.eos_token_id = codec_vocab_size - 2
-    codec_lm.config.bos_token_id = codec_vocab_size - 3
-    codec_lm.config.mask_token_id = codec_vocab_size - 4
-
-    model = SPEECH_LLM(
-        speech_encoder,
-        llm,
-        encoder_projector,
-        codec_lm,
-        codec_lm_padding_side="left" if params.use_flash_attn else "right",
-    )
-
-    checkpoint = torch.load(f"{params.checkpoint_path}", map_location="cpu")
-    model.load_state_dict(checkpoint, strict=False)
-
-    model.to(device)
-    model.eval()
-    return model, tokenizer
-
-
-def audio_decode_cosyvoice(audio_tokens, codec_decoder):
+def audio_decode_cosyvoice2(
+    audio_tokens, prompt_text, prompt_speech_16k, codec_decoder
+):
     """
     Generate audio from tokens with optional tone and prompt embedding.
 
     Args:
         audio_tokens (list): List of audio tokens to be processed.
+        model_config: Configuration object containing vocab settings.
         codec_decoder: Codec decoder for generating audio.
+        tone_dir (str): The tone directory or setting.
+        audio_prompt_path (str, optional): Path to the audio prompt file. Required when tone_dir is not "default_tone".
+        code_layer (int, optional): Number of code layers. Defaults to 1.
+        num_latency_tokens (int, optional): Number of latency tokens to ignore. Defaults to 0.
+        speed (float, optional): Speed factor for audio generation. Defaults to 1.0.
 
     Returns:
         torch.Tensor: Generated audio waveform.
     """
-    flow_embedding = codec_decoder.frontend.spk2info["中文女"]["embedding"]
-    flow_prompt_speech_token = torch.zeros(1, 0, dtype=torch.int32)
-    prompt_speech_feat = torch.zeros(1, 0, 80)
+    model_inputs_dict = codec_decoder.frontend.frontend_zero_shot(
+        "empty", prompt_text, prompt_speech_16k, 24000
+    )
     tts_mel, _ = codec_decoder.model.flow.inference(
         token=audio_tokens.to(codec_decoder.model.device),
         token_len=torch.tensor([audio_tokens.shape[1]], dtype=torch.int32).to(
             codec_decoder.model.device
         ),
-        prompt_token=flow_prompt_speech_token.to(codec_decoder.model.device),
+        prompt_token=model_inputs_dict["flow_prompt_speech_token"].to(
+            codec_decoder.model.device
+        ),
         prompt_token_len=torch.tensor(
-            [flow_prompt_speech_token.shape[1]], dtype=torch.int32
+            [model_inputs_dict["flow_prompt_speech_token_len"]], dtype=torch.int32
         ).to(codec_decoder.model.device),
-        prompt_feat=prompt_speech_feat.to(codec_decoder.model.device),
-        prompt_feat_len=torch.tensor(
-            [prompt_speech_feat.shape[1]], dtype=torch.int32
-        ).to(codec_decoder.model.device),
-        embedding=flow_embedding.to(codec_decoder.model.device),
-        flow_cache=torch.zeros(1, 80, 0, 2).to(codec_decoder.model.device),
+        prompt_feat=model_inputs_dict["prompt_speech_feat"].to(
+            codec_decoder.model.device
+        ),
+        prompt_feat_len=model_inputs_dict["prompt_speech_feat_len"].to(
+            codec_decoder.model.device
+        ),
+        embedding=model_inputs_dict["flow_embedding"].to(codec_decoder.model.device),
+        finalize=True,
     )
 
     audio_hat, _ = codec_decoder.model.hift.inference(
@@ -149,7 +70,6 @@ def audio_decode_cosyvoice(audio_tokens, codec_decoder):
     )
 
     return audio_hat
-
 
 def preprocess(
     messages,
@@ -225,7 +145,16 @@ def _launch_demo(args, model, tokenizer, token2wav_model, asr_model):
 
         audio_tokens = [token for token in audio_tokens if token < 4096]
         audio_tokens = torch.tensor(audio_tokens, dtype=torch.int32).unsqueeze(0)
-        audio_hat = audio_decode_cosyvoice(audio_tokens, token2wav_model)
+
+        # audio_hat = audio_decode_cosyvoice(audio_tokens, token2wav_model)
+        prompt_speech_16k = load_wav(params.prompt_speech_path, 16000)
+        audio_hat = audio_decode_cosyvoice2(
+            audio_tokens,
+            params.prompt_text,
+            prompt_speech_16k,
+            token2wav_model,
+        )
+        
         audio = audio_hat.squeeze(0).cpu().numpy()
         audio = np.array(audio * 32767).astype(np.int16)
         wav_io = io.BytesIO()
@@ -246,13 +175,16 @@ def _launch_demo(args, model, tokenizer, token2wav_model, asr_model):
             gr.update(visible=False),  # submit_btn
             gr.update(visible=True),  # stop_btn
         )
-        print(2333, history, audio)
+
         history.append({"role": "user", "content": (audio,)})
         history.append({"role": "user", "content": f"{DEFAULT_SPEECH_TOKEN}"})
         history.append({"role": "assistant", "content": ""})
         formatted_history = format_history(
             history=history
         )  # only keep string text format
+        # TODO: using multi-rounds en dataset
+        formatted_history = formatted_history[-2:]
+        print(2333, formatted_history)
 
         assert audio is not None
         audio_transcript = get_transcript(
@@ -378,6 +310,7 @@ def _get_args():
         "--server-name", type=str, default="127.0.0.1", help="Demo server name."
     )
     add_model_arguments(parser)
+    add_training_arguments(parser)
     args = parser.parse_args()
     return args
 
@@ -417,10 +350,16 @@ def get_transcript(audio_path, recognizer):
 if __name__ == "__main__":
     args = _get_args()
     model, tokenizer = get_model(args)
-    token2wav = CosyVoice(
+    model.eval()
+    model.to(torch.device("cuda"))
+    # token2wav = CosyVoice(
+    #     args.token2wav_path, load_jit=False, load_trt=False, fp16=False
+    # )
+    token2wav = CosyVoice2(
         args.token2wav_path, load_jit=False, load_trt=False, fp16=False
     )
 
+    # TODO: using an English ASR model, also, train model with InstructS2S-200K multi-rounds dataset
     asr_model = sherpa_onnx.OfflineRecognizer.from_paraformer(
         paraformer=f"{args.asr_model_dir}/model.int8.onnx",
         tokens=f"{args.asr_model_dir}/tokens.txt",

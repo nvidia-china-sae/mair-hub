@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright    2023  Xiaomi Corp.        (authors: Xiaoyu Yang)
-#              2024  Yuekai Zhang
+#              2025  Yuekai Zhang
 #
 # See ../../../../LICENSE for clarification regarding multiple authors
 #
@@ -17,20 +17,30 @@
 # limitations under the License.
 """
 Usage:
-# For Chinese dataset, you can use the following command to download the Chinese fine-tuned whisper model.
-huggingface-cli download --local-dir models/whisper yuekai/icefall_asr_multi-hans-zh_whisper
-# Qwen Pretrained model
-huggingface-cli download --local-dir models/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-0.5B-Instruct
+# stage 1: train adaptor only using librispeech
 
-torchrun --nproc_per_node $ngpu ./qwen_omni/train.py \
-    --max-duration 50 \
-    --enable-musan False \
-    --exp-dir $exp_dir \
-    --speech-encoder-path-or-name models/whisper/v1.1/whisper-large-v2-multi-hans-zh-epoch-3-avg-10.pt \
-    --llm-path-or-name Qwen/Qwen2.5-0.5B-Instruct \
-    --manifest-dir data/fbank \
+torchrun --nproc_per_node $ngpu ./src/train.py \
+  --max-duration 800 --on-the-fly-feats True \
+  --exp-dir $stage1_exp_dir  \
+  --data-dir data --dataset librispeech \
+  --speech-encoder-path-or-name models/large-v2.pt \
+  --llm-path-or-name models/Qwen2.5-0.5B-Instruct \
+  --deepspeed \
+  --deepspeed_config ./src/ds_config_zero1.json \
+  --use-flash-attn True \
+  --use-lora False --unfreeze-llm False --unfreeze-speech-projector True --enable-speech-output False
+
+# stage 2: train adaptor and llm-lora using vocalnet
+torchrun --nproc_per_node $ngpu ./src/train.py \
+    --max-duration 200 \
+    --exp-dir $stage2_exp_dir \
+    --last-stage-model-path $stage1_exp_dir/epoch-3/pytorch_model.bin \
+    --speech-encoder-path-or-name models/large-v2.pt \
+    --llm-path-or-name models/Qwen2.5-0.5B-Instruct \
+    --on-the-fly-feats True \
     --deepspeed \
-    --deepspeed_config ./qwen_omni/ds_config_zero1.json \
+    --data-dir data --dataset vocalnet_ultrachat_voiceassistant \
+    --deepspeed_config ./src/ds_config_zero1.json \
     --use-flash-attn True \
     --use-lora True --unfreeze-llm True --unfreeze-speech-projector True --enable-speech-output True
 """

@@ -16,14 +16,21 @@ stage1_exp_dir=./exp/exp_librispeech_adapter_pretrain
 stage2_exp_dir=./exp/exp_ultrachat_voiceassistant_sft
 
 if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
-  log "stage 0: Clone CosyVoice repo and install requirements inside the container"
-  # docker: ghcr.io/swivid/f5-tts:main
-  pip install -r qwen_omni/requirements.txt
+  log "stage 0: Download models and data"
 
   wget https://openaipublic.azureedge.net/main/whisper/models/81f7c96c852ee8fc832187b0132e569d6c3065a3252ed18e56effd0b6a73e524/large-v2.pt -O models/large-v2.pt
   huggingface-cli download --local-dir models/Qwen2.5-0.5B-Instruct Qwen/Qwen2.5-0.5B-Instruct
   
-  huggingface-cli download --local-dir data/librispeech_asr --repo-type dataset fixie-ai/librispeech_asr 
+  # stage 0 training data
+  huggingface-cli download --local-dir data/librispeech_asr --repo-type dataset fixie-ai/librispeech_asr
+  # huggingface-cli download --local-dir data/peoples_speech --repo-type dataset fixie-ai/peoples_speech
+  # huggingface-cli download --local-dir data/gigaspeech --repo-type dataset fixie-ai/gigaspeech
+  # satge 1 training data
+  # see https://huggingface.co/datasets/VocalNet/VoiceAssistant-430K-vocalnet/blob/main/pack_restore_parquet.py as well
+  huggingface-cli download --local-dir data/UltraChat-vocalnet --repo-type dataset VocalNet/UltraChat-vocalnet
+  huggingface-cli download --local-dir data/VoiceAssistant-430K-vocalnet --repo-type dataset VocalNet/VoiceAssistant-430K-vocalnet
+  # huggingface-cli download --local-dir data/InstructS2S-200K --repo-type dataset yuekai/InstructS2S-200K
+
 fi
 
 if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then

@@ -8,10 +8,8 @@ import uvicorn
 import whisper
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from train import DEFAULT_SPEECH_TOKEN, add_model_arguments
+from train import DEFAULT_SPEECH_TOKEN, add_model_arguments, add_training_arguments, get_model
 from transformers import AutoTokenizer
-from web_demo import get_model
-
 
 def get_args():
     parser = argparse.ArgumentParser(description="extract speech code")
@@ -34,6 +32,7 @@ def get_args():
         help="Port number",
     )
     add_model_arguments(parser)
+    add_training_arguments(parser)
     args = parser.parse_args()
     return args
 
@@ -69,9 +68,11 @@ def preprocess_prompt(tokenizer):
 args = get_args()
 print(f"Using port: {args.port}")
 model, tokenizer = get_model(args)
+device = torch.device("cuda")
+model.to(device)
 app = FastAPI()
 
-device = torch.device("cuda")
+
 if args.prompt_template is None:
     template = f"{DEFAULT_SPEECH_TOKEN}"
 elif args.prompt_template == "qa":
@@ -82,8 +83,6 @@ elif args.prompt_template == "asr":
     template = (
         f"Repeat the following text, without any explanation: {DEFAULT_SPEECH_TOKEN}"
     )
-elif args.prompt_template == "mt":
-    template = f"Please translate the text to Chinese. Your response should only include the Chinese translation, without any additional words:\n\n{DEFAULT_SPEECH_TOKEN}"
 else:
     raise ValueError(f"Invalid prompt template: {args.prompt_template}")
 print("Using template:", template)
