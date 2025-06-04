@@ -38,9 +38,10 @@ if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
   python3 ./src/web_demo.py \
     --speech-encoder-path-or-name models/large-v2.pt  \
     --llm-path-or-name models/Qwen2.5-0.5B-Instruct \
-    --checkpoint-path $exp_dir/epoch-1/pytorch_model.bin \
+    --pretrained-model-path $exp_dir/epoch-9.pt/pytorch_model.bin \
     --use-flash-attn True \
     --enable-speech-output True \
+    --asr-model-dir models/sherpa-onnx-paraformer-zh-2023-09-14 \
     --use-lora True --token2wav-path models/CosyVoice2-0.5B --share
 fi
 

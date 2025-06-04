@@ -143,14 +143,13 @@ def _launch_demo(args, model, tokenizer, token2wav_model, asr_model):
 
         yield {"type": "text", "data": hyps[0]}
 
-        audio_tokens = [token for token in audio_tokens if token < 4096]
         audio_tokens = torch.tensor(audio_tokens, dtype=torch.int32).unsqueeze(0)
 
         # audio_hat = audio_decode_cosyvoice(audio_tokens, token2wav_model)
-        prompt_speech_16k = load_wav(params.prompt_speech_path, 16000)
+        prompt_speech_16k = load_wav(args.prompt_speech_path, 16000)
         audio_hat = audio_decode_cosyvoice2(
             audio_tokens,
-            params.prompt_text,
+            args.prompt_text,
             prompt_speech_16k,
             token2wav_model,
         )
@@ -158,7 +157,7 @@ def _launch_demo(args, model, tokenizer, token2wav_model, asr_model):
         audio = audio_hat.squeeze(0).cpu().numpy()
         audio = np.array(audio * 32767).astype(np.int16)
         wav_io = io.BytesIO()
-        sf.write(wav_io, audio, samplerate=22050, format="WAV")
+        sf.write(wav_io, audio, samplerate=24000, format="WAV") # 22050 for CosyVoice1
         wav_io.seek(0)
         wav_bytes = wav_io.getvalue()
         audio_path = processing_utils.save_bytes_to_cache(
@@ -182,9 +181,8 @@ def _launch_demo(args, model, tokenizer, token2wav_model, asr_model):
         formatted_history = format_history(
             history=history
         )  # only keep string text format
-        # TODO: using multi-rounds en dataset
+        # FIXME: TODO: using multi-rounds en dataset
         formatted_history = formatted_history[-2:]
-        print(2333, formatted_history)
 
         assert audio is not None
         audio_transcript = get_transcript(
@@ -268,12 +266,6 @@ def _get_args():
     parser = ArgumentParser()
 
     parser.add_argument(
-        "--checkpoint-path",
-        type=str,
-        default=None,
-        help="Checkpoint name or path, default to %(default)r",
-    )
-    parser.add_argument(
         "--token2wav-path",
         type=str,
         default=None,
@@ -308,6 +300,19 @@ def _get_args():
     )
     parser.add_argument(
         "--server-name", type=str, default="127.0.0.1", help="Demo server name."
+    )
+    parser.add_argument(
+        "--prompt-text",
+        type=str,
+        default="Romeo and Juliet might be the most famous act of William Shakespeare.",
+        help="The prompt text",
+    )
+
+    parser.add_argument(
+        "--prompt-speech-path",
+        type=str,
+        default="./assets/common_voice_en_2586258.wav",
+        help="The path to the prompt speech",
     )
     add_model_arguments(parser)
     add_training_arguments(parser)
