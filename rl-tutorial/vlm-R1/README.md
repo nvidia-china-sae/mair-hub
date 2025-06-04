@@ -130,12 +130,12 @@ The multimodal training set uses [MMK12](https://huggingface.co/datasets/Fanqing
 
 ### Reward Function
 
-The latest version of veRL supports customizing reward functions by passing in Python files. In this experiment, we use [xverify_for_dapo.py](./src/xverify_for_dapo.py) as the reward function.
+The latest version of veRL supports customizing reward functions by passing in Python files. In this experiment, we use [reward_model.py](./src/reward_model.py) as the reward function.
 
 Its core logic is as follows:
 - First, check if the model output conforms to the <think>...</think><answer>...</answer> format; if not, return -1.0;
 - Extract the answer from the <answer> tag, use rule-based matching to compare with the ground truth, and return 1.0 if the match is successful;
-- If rule-based matching fails, call the xVerify model for answer verification; if the answer matches the standard answer, return 1.0, otherwise return -1.0.
+- If rule-based matching fails, call the reward model for answer verification; if the answer matches the standard answer, return 1.0, otherwise return -1.0.
 
 ### Prompt Template
 

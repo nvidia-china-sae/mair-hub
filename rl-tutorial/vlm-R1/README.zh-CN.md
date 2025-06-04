@@ -132,12 +132,12 @@ bash process_all_datasets.sh
 
 ### Reward Function
 
-最新版 veRL 支持通过传入 Python 文件的方式自定义 Reward function。在本实验中，我们采用 [xverify_for_dapo.py](./src/xverify_for_dapo.py) 作为奖励函数。
+最新版 veRL 支持通过传入 Python 文件的方式自定义 Reward function。在本实验中，我们采用 [reward_model.py](./src/reward_model.py) 作为奖励函数。
 
 其核心逻辑如下：
 - 首先检验模型输出是否符合 <think>...</think><answer>...</answer> 格式，若不符合则返回 -1.0；
 - 从 <answer> 标签中提取答案，使用规则匹配方式与 ground truth 比对，若匹配成功则返回 1.0；
-- 若规则匹配不成功，则调用 xVerify 模型进行答案验证，如果答案与标准答案匹配则返回 1.0，否则返回 -1.0。
+- 若规则匹配不成功，则调用奖励模型进行答案验证，如果答案与标准答案匹配则返回 1.0，否则返回 -1.0。
 
 ### Prompt Template
 
@@ -242,7 +242,7 @@ bash run_qwen2.5-vl-7b-instrcut-text-multimodal.sh
 | Qwen2.5-VL-7B-Instruct | 5.2 | 64.6 | 30.7 |
 | Qwen2.5-VL-7B-Instruct-RL-Text | 6.9 | 68.0 | 35.5 |
 | Qwen2.5-VL-7B-Instruct-RL-Multimodal | 5.0 | 66.3 | 33.7 |
-| Qwen2.5-VL-7B-Instruct-RL-Text-Multimodal | - | - | - |
+| Qwen2.5-VL-7B-Instruct-RL-Text-Multimodal | 5.8 | 67.1 | - |
 ### 多模态任务评估
 
 多模态评估覆盖了多种类型的数据集：
