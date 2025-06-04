@@ -4,12 +4,12 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
 NNODES=1
 project_name='DAPO'
-exp_name='DAPO-Qwen2.5-VL-3B-Vision-Multimodal'
+exp_name='DAPO-Qwen2.5-VL-3B-Vision-Text'
 MODEL_PATH=Qwen/Qwen2.5-VL-3B-Instruct
 WORKING_DIR=/workspace/verl
 CKPTS_DIR=${WORKING_DIR}/ckpts/${project_name}/${exp_name}
-# Multimodal
-TRAIN_FILE="[${SCRIPT_DIR}/data/we-math.parquet,${SCRIPT_DIR}/data/geo3k.parquet,${SCRIPT_DIR}/data/math-vision.parquet,${SCRIPT_DIR}/data/polymath.parquet]"
+# Text
+TRAIN_FILE="[${SCRIPT_DIR}/data/skywork_or1.parquet]"
 TEST_FILE="[${SCRIPT_DIR}/data/aime24.parquet,${SCRIPT_DIR}/data/math500.parquet]"
 
 RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --runtime-env="${WORKING_DIR}/verl/trainer/runtime_env.yaml" \
@@ -93,6 +93,7 @@ RAY_ADDRESS='http://127.0.0.1:8265' ray job submit --runtime-env="${WORKING_DIR}
     trainer.default_local_dir="${CKPTS_DIR}" \
     trainer.resume_mode=auto \
     trainer.max_actor_ckpt_to_keep=3 \
-    custom_reward_function.path=${SCRIPT_DIR}/src/xverify_for_dapo.py \
+    custom_reward_function.path=${SCRIPT_DIR}/src/reward_model.py \
     custom_reward_function.name=compute_score \
-    +custom_reward_function.url=${XVERIFY_URL} 
+    +custom_reward_function.url=${REWARD_MODEL_URL} \
+    +custom_reward_function.model_name=${REWARD_MODEL_NAME} 

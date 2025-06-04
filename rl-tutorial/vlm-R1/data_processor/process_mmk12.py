@@ -16,6 +16,7 @@
 import os
 import datasets
 import argparse
+from PIL import Image
 
 from datasets import Sequence
 from datasets import Image as ImageData
@@ -25,17 +26,19 @@ from .utils import ImageProcessor, valid_images
 def make_map_fn(split, processor, data_source, system):
     def process_fn(example, idx):
         question = example.pop('question')
-        option = example.pop('option')
         answer = example.pop('answer')
-        prompt = "<image>\n" + "Question: " + question + "\nOptions: " + option 
-        image = example.pop('image_path')
+        image = example.pop('image')
+        if image.mode in ['P', 'L']:
+            image = image.convert('RGBA')
         image = processor(image)
+        assert isinstance(image, Image.Image)
+
         data = {
             "data_source": data_source,
             "prompt": [
             {
                 "role": "user",
-                "content": prompt + "  " + system
+                "content": "<image>\n" + question + "  " + system
             }],
             "images": [image],
             "ability": "math",
@@ -60,7 +63,7 @@ if __name__ == '__main__':
     parser.add_argument('--hdfs_dir', default=None)
 
     args = parser.parse_args()
-    data_source = 'We-Math/We-Math'
+    data_source = 'FanqingM/MMK12'
     ds = datasets.load_dataset(data_source)
 
     system = ("You first think about the reasoning process as an internal monologue and then provide the user with the answer. "
@@ -68,7 +71,7 @@ if __name__ == '__main__':
                
     processor = ImageProcessor(max_pixels=768 * 768, min_pixels=56 * 56)
     
-    dataset = ds['testmini'].map(function=make_map_fn('testmini', processor, data_source, system), with_indices=True, num_proc=8)
+    dataset = ds['train'].map(function=make_map_fn('train', processor, data_source, system), with_indices=True, num_proc=8)
     # filter out the data
     print("before filter", len(dataset))
     dataset = dataset.filter(lambda x: x['reward_model']['ground_truth'] is not None and x['prompt'][0]['content'].count("<image") == 1, num_proc=8)
@@ -77,5 +80,5 @@ if __name__ == '__main__':
     dataset = dataset.cast_column('images', Sequence(feature=ImageData()))
     valid_images(dataset)
     
-    dataset.to_parquet(os.path.join(args.local_dir, 'we-math.parquet'))
+    dataset.to_parquet(os.path.join(args.local_dir, 'mmk12.parquet'))
     print(f"{data_source} dataset has been saved to {args.local_dir} with {len(dataset)} samples")

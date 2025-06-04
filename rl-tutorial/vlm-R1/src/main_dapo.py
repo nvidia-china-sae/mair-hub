@@ -21,7 +21,7 @@ import hydra
 import ray
 
 from .dapo_ray_trainer import RayDAPOTrainer
-from .xverify_for_dapo import compute_score
+from .reward_model import compute_score
 
 
 def get_custom_reward_fn(config):
@@ -169,7 +169,7 @@ class TaskRunner:
             from .async_dapo import AsyncDAPORewardManager
             
             from functools import partial
-            reward_manager_cls = partial(AsyncDAPORewardManager, base_url=config.custom_reward_function.url)
+            reward_manager_cls = partial(AsyncDAPORewardManager, base_url=config.custom_reward_function.url, reward_model_name=config.custom_reward_function.model_name)
         else:
             raise NotImplementedError
 
