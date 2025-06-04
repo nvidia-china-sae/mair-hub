@@ -52,6 +52,10 @@ from utils import get_local_rank, str2bool
 import io
 import wave
 import random
+import json
+import os
+
+from vocalnet_lhotse_cutset import LazyCustomDatasetIterator
 
 class _SeedWorkers:
     def __init__(self, seed: int):
@@ -92,9 +96,9 @@ class AsrDataModule:
             "augmentations, etc.",
         )
         group.add_argument(
-            "--manifest-dir",
+            "--data-dir",
             type=Path,
-            default=Path("data/fbank"),
+            default=Path("data"),
             help="Path to directory with train/valid/test cuts.",
         )
         group.add_argument(
@@ -219,7 +223,7 @@ class AsrDataModule:
         if self.args.enable_musan:
             logging.info("Enable MUSAN")
             logging.info("About to get Musan cuts")
-            cuts_musan = load_manifest(self.args.manifest_dir / "musan_cuts.jsonl.gz")
+            cuts_musan = load_manifest(self.args.data_dir/ "fbank" / "musan_cuts.jsonl.gz")
             transforms.append(
                 CutMix(cuts=cuts_musan, p=0.5, snr=(10, 20), preserve_id=True)
             )
@@ -373,75 +377,46 @@ class AsrDataModule:
         return test_dl
 
     @lru_cache()
-    def test_cuts_belle(self) -> CutSet:
-        logging.info("About to get test cuts")
-        return {
-            "test": load_manifest_lazy(
-                self.args.manifest_dir / "cuts_belle_test.jsonl.gz"
-            )
-        }
-    @lru_cache()
-    def dev_cuts_belle(self) -> CutSet:
-        logging.info("About to get test cuts")
-        return load_manifest_lazy(
-            self.args.manifest_dir / "cuts_belle_test.jsonl.gz"
-        )
-    @lru_cache()
-    def train_cuts_belle(self) -> CutSet:
+    def train_valid_cuts_en_vocalnet(self) -> CutSet:
         logging.info("About to get train cuts")
-        slam_omni_zh_cuts = load_manifest_lazy(
-            self.args.manifest_dir / "cuts_belle_train.jsonl.gz"
+        json_file_path_voiceassistant = (
+            self.args.data_dir.joinpath("VoiceAssistant-430K-vocalnet/VoiceAssistant-430K.json")
         )
-        return slam_omni_zh_cuts
+        json_file_path_ultrachat = (
+            self.args.data_dir.joinpath("UltraChat-vocalnet/UltraChat.json")
+        )
+        json_file_parent_of_parent_dir = os.path.dirname(
+            os.path.dirname(json_file_path_voiceassistant)
+        )
+        with open(json_file_path_voiceassistant, "r", encoding="utf-8") as f:
+            list_data_dict_voiceassistant = json.load(f)
+        with open(json_file_path_ultrachat, "r", encoding="utf-8") as f:
+            list_data_dict_ultrachat = json.load(f)
+        list_dict_total = list_data_dict_voiceassistant + list_data_dict_ultrachat
+        # shuffle and split into list_dict_train, list_dict_eval, where eval include 1000 items
+        random.shuffle(list_dict_total)
+        list_dict_train = list_dict_total[:-1000]
+        list_dict_eval = list_dict_total[-1000:]
 
-    @lru_cache()
-    def train_cuts_en_vocalnet(self) -> CutSet:
-        logging.info("About to get train cuts")
-        VoiceAssistant_cuts = load_manifest_lazy(
-            self.args.manifest_dir / "cuts_voice_assistant_00001-00049.jsonl.gz"
-        )
-        ultrachat_cuts = load_manifest_lazy(
-            self.args.manifest_dir / "cuts_ultrachat_train.jsonl.gz"
-        )
-        VoiceAssistant_cuts = VoiceAssistant_cuts.resample(16000)
-        ultrachat_cuts = ultrachat_cuts.resample(16000)
-        return CutSet.mux(
-            VoiceAssistant_cuts,
-            ultrachat_cuts,
-            weights=[
-                len(VoiceAssistant_cuts),
-                len(ultrachat_cuts),
-            ],
-        )
-    @lru_cache()
-    def valid_cuts_en_vocalnet(self) -> CutSet:
-        logging.info("About to get valid cuts")
-        VoiceAssistant_cuts = load_manifest_lazy(
-            self.args.manifest_dir / "cuts_voice_assistant.00000.jsonl.gz"
-        )
-        VoiceAssistant_cuts = VoiceAssistant_cuts.resample(16000)
-        return VoiceAssistant_cuts
+        cut_set_train = CutSet(LazyCustomDatasetIterator(list_data_dict=list_dict_train, json_file_parent_of_parent_dir=json_file_parent_of_parent_dir))
+        cut_set_eval = CutSet(LazyCustomDatasetIterator(list_data_dict=list_dict_eval, json_file_parent_of_parent_dir=json_file_parent_of_parent_dir))
 
-    @lru_cache()
-    def test_cuts_en_vocalnet(self) -> CutSet:
-        logging.info("About to get test cuts")
-        VoiceAssistant_cuts = load_manifest_lazy(
-            self.args.manifest_dir / "cuts_voice_assistant_small.00000.jsonl.gz"
-        )
-        VoiceAssistant_cuts = VoiceAssistant_cuts.resample(16000)
-        return {"test": VoiceAssistant_cuts}
+        cut_set_train = cut_set_train.resample(16000)
+        cut_set_eval = cut_set_eval.resample(16000)
+
+        return cut_set_train, cut_set_eval
 
     @lru_cache()
     def train_cuts_ultravox(self) -> CutSet:
         logging.info("About to get train cuts")
-        if self.args.huggingface_dataset_path_or_name is not None:
+        if self.args.data_dir is not None:
             librispeech_path = (
-                self.args.huggingface_dataset_path_or_name + "/librispeech_asr"
+                self.args.data_dir + "/librispeech_asr"
             )
             people_speech_path = (
-                self.args.huggingface_dataset_path_or_name + "/peoples_speech"
+                self.args.data_dir + "/peoples_speech"
             )
-            gigaspeech_path = self.args.huggingface_dataset_path_or_name + "/gigaspeech"
+            gigaspeech_path = self.args.data_dir + "/gigaspeech"
         else:
             librispeech_path = "fixie-ai/librispeech_asr"
             people_speech_path = "fixie-ai/peoples_speech"
@@ -526,10 +501,10 @@ class AsrDataModule:
         )
 
     @lru_cache()
-    def valid_cuts_ultravox(self) -> CutSet:
+    def valid_cuts_librispeech_clean(self) -> CutSet:
         logging.info("About to get valid cuts")
-        if self.args.huggingface_dataset_path_or_name is not None:
-            librispeech_path = self.args.huggingface_dataset_path_or_name + "/librispeech_asr"
+        if self.args.data_dir is not None:
+            librispeech_path = self.args.data_dir + "/librispeech_asr"
         else:
             librispeech_path = "fixie-ai/librispeech_asr"
         librispeech_clean_valid = load_dataset(
@@ -545,8 +520,8 @@ class AsrDataModule:
     @lru_cache()
     def train_cuts_librispeech(self) -> CutSet:
         logging.info("About to get train cuts")
-        if self.args.huggingface_dataset_path_or_name is not None:
-            librispeech_path = self.args.huggingface_dataset_path_or_name + "/librispeech_asr"
+        if self.args.data_dir is not None:
+            librispeech_path = self.args.data_dir + "/librispeech_asr"
         else:
             librispeech_path = "fixie-ai/librispeech_asr"
         # 148_688
@@ -592,24 +567,10 @@ class AsrDataModule:
         )
 
     @lru_cache()
-    def train_cuts_gigaspeech(self) -> CutSet:
-        logging.info("About to get train cuts")
-        gigaspeech_path = "fixie-ai/gigaspeech"
-        gigaspeech = load_dataset(
-            gigaspeech_path, "xl-empty-audio-removed", split="train", streaming=True
-        )
-
-        gigaspeech_cuts = CutSet.from_huggingface_dataset(
-            gigaspeech, audio_key="audio", text_key="text"
-        )
-
-        return gigaspeech_cuts
-
-    @lru_cache()
     def train_cuts_instruct_s2s(self) -> CutSet:
         logging.info("About to get train cuts")
-        if self.args.huggingface_dataset_path_or_name is not None:
-            data_path = self.args.huggingface_dataset_path_or_name + "/InstructS2S-200K"
+        if self.args.data_dir is not None:
+            data_path = self.args.data_dir + "/InstructS2S-200K"
         else:
             data_path = "yuekai/InstructS2S-200K"
         # 148_688
@@ -627,178 +588,55 @@ class AsrDataModule:
 
         return instruct_s2s_train_cuts
 
-    @lru_cache()
-    def train_cuts_en_speech2speech(self) -> CutSet:
-        logging.info("About to get train cuts")
-        VoiceAssistant_cuts = load_manifest_lazy(
-            self.args.manifest_dir / "cuts_voice_assistant_00001-00049.jsonl.gz"
-        )
-        ultrachat_cuts = load_manifest_lazy(
-            self.args.manifest_dir / "cuts_ultrachat_train.jsonl.gz"
-        )
+    # @lru_cache()
+    # def train_cuts_emilia_en(self) -> CutSet:
+    #     logging.info("About to get train cuts")
+    #     data_path = "/lustre/fsw/general_sa/yuekaiz/s2s" + "/emilia_en"
 
-        if self.args.huggingface_dataset_path_or_name is not None:
-            data_path = self.args.huggingface_dataset_path_or_name + "/InstructS2S-200K"
-        else:
-            data_path = "yuekai/InstructS2S-200K"
-        # 148_688
-        instruct_s2s_train = load_dataset(
-            data_path, split="train", streaming=True
-        )
+    #     emilia_en_data = load_dataset(
+    #         data_path, split="train", streaming=True
+    #     )
 
-        instruct_s2s_train_cuts = CutSet.from_huggingface_dataset(
-            instruct_s2s_train,
-            audio_key="question_audio",
-            text_key="answer",
-        )
+    #     def update_wav_path(example):
+    #         sampling_rate = 16000  # From current_features
+    #         duration = 1  # seconds, arbitrary duration for random audio
+    #         num_channels = 1  # mono
+    #         sample_width = 2  # 2 bytes = 16-bit audio
 
-        instruct_s2s_train_cuts = instruct_s2s_train_cuts.resample(16000)
-
-
-        return CutSet.mux(
-            VoiceAssistant_cuts,
-            ultrachat_cuts,
-            instruct_s2s_train_cuts,
-            weights=[
-                len(VoiceAssistant_cuts),
-                len(ultrachat_cuts),
-                423_000,
-            ],
-        )
-
-    @lru_cache()
-    def train_cuts_en_speech2speech_librispeech(self) -> CutSet:
-        logging.info("About to get train cuts")
-        VoiceAssistant_cuts = load_manifest_lazy(
-            self.args.manifest_dir / "cuts_voice_assistant_00001-00049.jsonl.gz"
-        )
-        ultrachat_cuts = load_manifest_lazy(
-            self.args.manifest_dir / "cuts_ultrachat_train.jsonl.gz"
-        )
-
-        if self.args.huggingface_dataset_path_or_name is not None:
-            data_path = self.args.huggingface_dataset_path_or_name + "/InstructS2S-200K"
-        else:
-            data_path = "yuekai/InstructS2S-200K"
-        # 148_688
-        instruct_s2s_train = load_dataset(
-            data_path, split="train", streaming=True
-        )
-
-        instruct_s2s_train_cuts = CutSet.from_huggingface_dataset(
-            instruct_s2s_train,
-            audio_key="question_audio",
-            text_key="answer",
-        )
-
-        instruct_s2s_train_cuts = instruct_s2s_train_cuts.resample(16000)
-
-        if self.args.huggingface_dataset_path_or_name is not None:
-            librispeech_path = self.args.huggingface_dataset_path_or_name + "/librispeech_asr"
-        else:
-            librispeech_path = "fixie-ai/librispeech_asr"
-        # 148_688
-        librispeech_other = load_dataset(
-            librispeech_path, "other", split="train.500", streaming=True
-        )
-        # 104_014
-        librispeech_clean_360 = load_dataset(
-            librispeech_path, "clean", split="train.360", streaming=True
-        )
-        # 28_539
-        librispeech_clean_100 = load_dataset(
-            librispeech_path, "clean", split="train.100", streaming=True
-        )
-
-        librispeech_clean_100_cuts = CutSet.from_huggingface_dataset(
-            librispeech_clean_100,
-            audio_key="audio",
-            text_key="text",
-        )
-
-        librispeech_other_cuts = CutSet.from_huggingface_dataset(
-            librispeech_other,
-            audio_key="audio",
-            text_key="text",
-        )
-
-        librispeech_clean_360_cuts = CutSet.from_huggingface_dataset(
-            librispeech_clean_360,
-            audio_key="audio",
-            text_key="text",
-        )
-
-
-        return CutSet.mux(
-            librispeech_other_cuts,
-            VoiceAssistant_cuts,
-            ultrachat_cuts,
-            librispeech_clean_360_cuts,
-            instruct_s2s_train_cuts,
-            librispeech_clean_100_cuts,
-            weights=[
-                148688,
-                len(VoiceAssistant_cuts),
-                len(ultrachat_cuts),
-                104014,
-                423_000,
-                28539,
-            ],
-        )
-
-    @lru_cache()
-    def train_cuts_emilia_en(self) -> CutSet:
-        logging.info("About to get train cuts")
-        data_path = "/lustre/fsw/general_sa/yuekaiz/s2s" + "/emilia_en"
-        # if self.args.huggingface_dataset_path_or_name is not None:
-        #     data_path = self.args.huggingface_dataset_path_or_name + "/emilia_en"
-        # else:
-        #     data_path = "yuekai/emilia_en"
-
-        emilia_en_data = load_dataset(
-            data_path, split="train", streaming=True
-        )
-
-        def update_wav_path(example):
-            sampling_rate = 16000  # From current_features
-            duration = 1  # seconds, arbitrary duration for random audio
-            num_channels = 1  # mono
-            sample_width = 2  # 2 bytes = 16-bit audio
-
-            num_frames = int(duration * sampling_rate)
+    #         num_frames = int(duration * sampling_rate)
             
-            # Generate random bytes for the PCM data part
-            # This will be random noise, but structurally valid for a WAV file
-            pcm_data = bytes([random.randint(0, 255) for _ in range(num_frames * num_channels * sample_width)])
+    #         # Generate random bytes for the PCM data part
+    #         # This will be random noise, but structurally valid for a WAV file
+    #         pcm_data = bytes([random.randint(0, 255) for _ in range(num_frames * num_channels * sample_width)])
 
-            # Create a WAV file in memory
-            audio_buffer = io.BytesIO()
-            with wave.open(audio_buffer, 'wb') as wf:
-                wf.setnchannels(num_channels)
-                wf.setsampwidth(sample_width)
-                wf.setframerate(sampling_rate)
-                wf.writeframes(pcm_data) # writeframes expects bytes
+    #         # Create a WAV file in memory
+    #         audio_buffer = io.BytesIO()
+    #         with wave.open(audio_buffer, 'wb') as wf:
+    #             wf.setnchannels(num_channels)
+    #             wf.setsampwidth(sample_width)
+    #             wf.setframerate(sampling_rate)
+    #             wf.writeframes(pcm_data) # writeframes expects bytes
             
-            example["wav"] = audio_buffer.getvalue()
-            return example
+    #         example["wav"] = audio_buffer.getvalue()
+    #         return example
 
-        emilia_en_data = emilia_en_data.map(update_wav_path)
-        current_features = Features({
-            'id': Value('string'),
-            'text': Value('string'),
-            'duration': Value('float'),
-            'language': Value('string'),
-            'dnsmos': Value('float'),
-            'speech_token': Sequence(Value('int32')),
-            'wav': Audio(sampling_rate=16000)
+    #     emilia_en_data = emilia_en_data.map(update_wav_path)
+    #     current_features = Features({
+    #         'id': Value('string'),
+    #         'text': Value('string'),
+    #         'duration': Value('float'),
+    #         'language': Value('string'),
+    #         'dnsmos': Value('float'),
+    #         'speech_token': Sequence(Value('int32')),
+    #         'wav': Audio(sampling_rate=16000)
 
-        })
-        emilia_en_data = emilia_en_data.rename_column("code", "speech_token")
-        emilia_en_data = emilia_en_data.cast(current_features)
+    #     })
+    #     emilia_en_data = emilia_en_data.rename_column("code", "speech_token")
+    #     emilia_en_data = emilia_en_data.cast(current_features)
 
-        emilia_en_train_cuts = CutSet.from_huggingface_dataset(
-            emilia_en_data, # Adjusted from instruct_s2s_train
-            audio_key="wav",
-            text_key="text",
-        )
-        return emilia_en_train_cuts 
+    #     emilia_en_train_cuts = CutSet.from_huggingface_dataset(
+    #         emilia_en_data, # Adjusted from instruct_s2s_train
+    #         audio_key="wav",
+    #         text_key="text",
+    #     )
+    #     return emilia_en_train_cuts 

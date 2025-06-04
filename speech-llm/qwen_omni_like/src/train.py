@@ -702,7 +702,7 @@ def train_one_epoch(
     for batch_idx, batch in enumerate(train_dl):
         params.batch_idx_train += 1
         batch_size = len(batch["supervisions"]["text"])
-        if params.batch_idx_train % params.valid_interval == 0:
+        if params.batch_idx_train % params.valid_interval == 0 or batch_idx == 0:
             logging.info("Computing validation loss")
             valid_info = compute_validation_loss(
                 params=params,
@@ -1012,27 +1012,15 @@ def run(rank, world_size, args):
                 return False
         return True
 
-    if params.dataset == "slam_omni_belle":
-        train_cuts = data_module.train_cuts_belle()
-        valid_cuts = data_module.dev_cuts_belle()
-    elif params.dataset == "vocalnet_ultrachat_voiceassistant":
-        train_cuts = data_module.train_cuts_en_vocalnet()
-        valid_cuts = data_module.valid_cuts_en_vocalnet()
-    elif params.dataset == "vocalnet_ultrachat_voiceassistant_instruct_s2s":
-        train_cuts = data_module.train_cuts_en_speech2speech()
-        valid_cuts = data_module.valid_cuts_en_vocalnet()
-    elif params.dataset == "vocalnet_ultrachat_voiceassistant_instruct_s2s_librispeech":
-        train_cuts = data_module.train_cuts_en_speech2speech_librispeech()
-        valid_cuts = data_module.valid_cuts_en_vocalnet()
+
+    if params.dataset == "vocalnet_ultrachat_voiceassistant":
+        train_cuts, valid_cuts = data_module.train_valid_cuts_en_vocalnet()
     elif params.dataset == "ultravox_multi_en":
         train_cuts = data_module.train_cuts_ultravox()
-        valid_cuts = data_module.valid_cuts_ultravox()
+        valid_cuts = data_module.valid_cuts_librispeech_clean()
     elif params.dataset == "librispeech":
         train_cuts = data_module.train_cuts_librispeech()
-        valid_cuts = data_module.valid_cuts_ultravox()
-    elif params.dataset == "gigaspeech":
-        train_cuts = data_module.train_cuts_gigaspeech()
-        valid_cuts = data_module.valid_cuts_ultravox()
+        valid_cuts = data_module.valid_cuts_librispeech_clean()
     else:
         raise ValueError(f"Unknown dataset: {params.dataset}")
 
