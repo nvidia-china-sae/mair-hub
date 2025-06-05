@@ -144,7 +144,7 @@ if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
       --pretrained-model-path $exp_dir/epoch-9-avg-5.pt \
       --token2wav-path models/CosyVoice2-0.5B \
       --use-flash-attn True \
-      --enable-speech-output False \
+      --enable-speech-output True \
       --use-lora True \
       --output-dir $output_dir \
       --subset-name $subset_name \
