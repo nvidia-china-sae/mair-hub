@@ -126,6 +126,7 @@ class AsyncDAPORewardManager:
         overlong_buffer_cfg=None,
         max_workers=64,
         base_url=None,
+        reward_model_name=None
     ) -> None:
         self.tokenizer = tokenizer
         self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
@@ -135,10 +136,13 @@ class AsyncDAPORewardManager:
         self.max_resp_len = max_resp_len
         self.max_workers = max_workers
         self.base_url = base_url
+        self.reward_model_name = reward_model_name
         
         if self.base_url is None:
             raise ValueError("base_url must be provided")
         print(f"AsyncDAPO initialized, base_url: {self.base_url}, max_workers: {self.max_workers}")
+        if self.reward_model_name is None:
+            raise ValueError("reward_model_name must be provided")
         
         if self.overlong_buffer_cfg is not None:
             assert self.max_resp_len is not None, (
@@ -173,6 +177,7 @@ class AsyncDAPORewardManager:
             extra_info = data_item.non_tensor_batch.get("extra_info", {}) or {}
             
             extra_info["url"] = self.base_url
+            extra_info["model_name"] = self.reward_model_name
             
             items.append({
                 "i": i,

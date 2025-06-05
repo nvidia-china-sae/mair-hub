@@ -326,9 +326,9 @@ def compute_score(data_source, solution_str, ground_truth, extra_info):
         }
 
     # 如果 ground_truth 和 pred pred2 都是纯数字，且仍旧没有通过 rule-based verification，则返回 -1
-    if ground_truth.replace(".", "").isdigit() and \
-        ((pred is not None and pred.replace(".", "").isdigit()) or \
-         (pred2 is not None and pred2.replace(".", "").isdigit())):
+    if ground_truth.isdigit() and \
+        ((pred is not None and pred.isdigit()) or \
+         (pred2 is not None and pred2.isdigit())):
         if do_print:
             print(f"[Incorrect][Rule-based] Answer: {final_answer}, GT: {ground_truth}, Question: {extra_info['question']}")
         return {
@@ -341,14 +341,14 @@ def compute_score(data_source, solution_str, ground_truth, extra_info):
 
     model = OpenAI(
         base_url=extra_info["url"],
-        api_key="sk-proj-1234567890"
+        api_key="EMPTY"
     )
 
     prompt = PROMPT.format(question=extra_info["question"], output=final_answer, answer=ground_truth)
 
     try:
         response_obj = model.chat.completions.create(
-            model="IAAR-Shanghai/xVerify-0.5B-I",
+            model=extra_info["model_name"],
             messages=[
                 {
                     'role': 'user', 
@@ -361,10 +361,10 @@ def compute_score(data_source, solution_str, ground_truth, extra_info):
             timeout=60
         )
         if do_print:
-            print(f"[xVerify] Response: {response_obj.choices[0].message.content}")
+            print(f"[RewardModel] Response: {response_obj.choices[0].message.content}")
         if response_obj.choices[0].message.content == "Correct":
             if do_print:
-                print(f"[Correct][xVerify] Answer: {final_answer}, GT: {ground_truth}, Question: {extra_info['question']}")
+                print(f"[Correct][RewardModel] Answer: {final_answer}, GT: {ground_truth}, Question: {extra_info['question']}")
             return {
                 "score": 1.0,
                 "acc": 1.0,
@@ -372,8 +372,8 @@ def compute_score(data_source, solution_str, ground_truth, extra_info):
             }
     except Exception as e:
         import traceback
-        print(f"[xVerify] Error: {e}")
-        print(f"[xVerify] Error traceback: {traceback.format_exc()}")
+        print(f"[RewardModel] Error: {e}")
+        print(f"[RewardModel] Error traceback: {traceback.format_exc()}")
         return {
             "score": -1.0,
             "acc": 0.0,
@@ -382,7 +382,7 @@ def compute_score(data_source, solution_str, ground_truth, extra_info):
     
     # Very unlikely to be correct after the above matches
     if do_print:
-        print(f"[Incorrect][xVerify] Answer: {final_answer}, GT: {ground_truth}, Question: {extra_info['question']}")
+        print(f"[Incorrect][RewardModel] Answer: {final_answer}, GT: {ground_truth}, Question: {extra_info['question']}")
     return {
         "score": -1.0,
         "acc": 0.0,

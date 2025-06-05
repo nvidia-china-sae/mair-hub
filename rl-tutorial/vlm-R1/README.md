@@ -8,7 +8,7 @@ This tutorial introduces how to use the veRL framework to train VLM models with 
 - [Training](#training)
   - [Text Data Training](#text-data-training)
   - [Multimodal Data Training](#multimodal-data-training)
-  - [Two-Stage Training](#two-stage-training)
+  - [Mixed Training](#mixed-training)
 - [Experiment Curves](#experiment-curves)
 - [Evaluation Experiments](#evaluation-experiments)
 
@@ -30,8 +30,8 @@ docker run --runtime=nvidia -it --rm --shm-size="10g" --cap-add=SYS_ADMIN \
 After logging into the container, install verl and necessary dependencies:
 
 ```bash
-# install the nightly version (recommended)
-git clone https://github.com/volcengine/verl && cd verl && pip3 install -e .
+# install the recommended version
+git clone https://github.com/volcengine/verl && cd verl && git checkout ee8c34749df90b88d00439a09a1f2acb51d71bc3 && pip3 install -e .
 
 # If you need to use wandb to monitor experiments, you need to login with wandb
 wandb login
@@ -39,6 +39,10 @@ wandb login
 # If you're using HuggingFace datasets that require authentication, you need to login to your hf account
 huggingface-cli login
 ```
+
+**After completing the veRL environment setup, please copy all files in this directory to the verl directory to ensure subsequent experiments can proceed normally.**
+
+
 ### Key Parameters
 
 For key parameter descriptions of veRL, please refer to [Key Parameters](../r1-zero/README.md#key-parameters) in R1-Zero Tutorial.
@@ -65,8 +69,10 @@ For text-only data (such as Skywork-OR1), the data format is similar but omits t
         "ground_truth": "3"
     },
     "extra_info": {
+        "index": 1,
+        "split": "train",
         "answer": "3",
-        "split": "train"
+        "question": "Solve this algebra problem: If 3x + 7 = 16, what is the value of x?"
     }
 }
 ```
@@ -88,22 +94,27 @@ In the RL phase of veRL, each multimodal sample should follow the data format be
         "ground_truth": "11"
     },
     "extra_info": {
+        "split": "train",
+        "index": 1,
         "answer": "11",
-        "split": "train"
+        "question": "<image>Find x. Round to the nearest tenth, if necessary."
     }
 }
 ```
 
 * data_source: Identifies the dataset source of the sample, facilitating data tracing and management.
 * prompt: Chat messages stored in list form. During training, the framework will automatically call the tokenizer's apply_chat_template method to process and tokenize them.
-* images: Image data stored in list form for multimodal data, with data type bytes. The number of images must strictly correspond to the number of `<image>` tags in the prompt. In text-only data, this field should be completely omitted.
+* images: Image data stored in list form for multimodal data, with data type PIL.Image. The number of images must strictly correspond to the number of `<image>` tags in the prompt. In text-only data, this field should be completely omitted.
 * ability: Describes the task type or ability domain involved in the sample.
 * reward_model: In R1 stage RL training, it is recommended to use a rule-based reward function and fill in the standard answer to the question in the answer field.
 * extra_info: This field is not currently directly used by the framework and can be left empty or customized according to actual needs.
 
 ### Data Processing
 
-We need to write corresponding processing scripts for datasets according to the above data format. Specific implementation can refer to the [geometry3k processing script](https://github.com/volcengine/verl/blob/main/examples/data_preprocess/geo3k.py) provided by veRL.
+To ensure datasets conform to our predefined format specifications, raw data needs to be preprocessed and converted. You can execute the following script to complete the preprocessing of all datasets in one go:
+```bash
+bash process_all_datasets.sh
+```
 
 ### Dataset Introduction
 
@@ -113,20 +124,19 @@ This tutorial uses two types of datasets for training:
 Text training uses the [Skywork-OR1-RL-Data](https://huggingface.co/datasets/Skywork/Skywork-OR1-RL-Data) dataset, a high-quality text-only dataset containing numerous mathematical task samples. Our experiments show that even training with text-only data can effectively improve the performance of multimodal models on visual tasks.
 
 #### Multimodal Dataset
-The multimodal training set is integrated from multiple open-source datasets, including [geometry3k](https://huggingface.co/datasets/hiyouga/geometry3k), [MathVision](https://huggingface.co/datasets/MathLLMs/MathVision), [polymath](https://huggingface.co/datasets/him1411/polymath), [SceMQA-main](https://huggingface.co/datasets/Haozy/SceMQA-main), and [We-Math](https://huggingface.co/datasets/We-Math/We-Math). A total of approximately 12K samples covering various mathematical problems involving images, text, and image-text combinations.
+The multimodal training set uses [MMK12](https://huggingface.co/datasets/FanqingM/MMK12), which is a manually collected open-source multimodal reasoning dataset with a total of approximately 15K samples.
 
-**Note: The data in the `data` directory has been pre-processed and is ready to use.**
 
 ## Custom Reward Function and Prompt Template
 
 ### Reward Function
 
-The latest version of veRL supports customizing reward functions by passing in Python files. In this experiment, we use [xverify_for_dapo.py](./src/xverify_for_dapo.py) as the reward function.
+The latest version of veRL supports customizing reward functions by passing in Python files. In this experiment, we use [reward_model.py](./src/reward_model.py) as the reward function.
 
 Its core logic is as follows:
-- First, check if the model output conforms to the <think>...</think><answer>...</answer> format; if not, return -1.0;
-- Extract the answer from the <answer> tag, use rule-based matching to compare with the ground truth, and return 1.0 if the match is successful;
-- If rule-based matching fails, call the xVerify model for answer verification; if the answer matches the standard answer, return 1.0, otherwise return -1.0.
+- First, check if the model output conforms to the \<think\>...\</think\>\<answer\>...\</answer\> format; if not, return -1.0;
+- Extract the answer from the \<answer\> tag, use rule-based matching to compare with the ground truth, and return 1.0 if the match is successful;
+- If rule-based matching fails, call the reward model for answer verification; if the answer matches the standard answer, return 1.0, otherwise return -1.0.
 
 ### Prompt Template
 
@@ -139,21 +149,33 @@ The chat template defaults to using the model Tokenizer's Chat Template.
 
 ## Training
 
-### Deploy xVerify Model
+### Deploy Reward Model
 
-[xVerify](https://github.com/IAAR-Shanghai/xVerify) is an answer verification tool specifically designed for evaluating reasoning models, capable of accurately extracting final answers and intelligently comparing the equivalence of mathematical expressions in different forms.
+Relying solely on mathematical rule-based verification as a reward function has obvious limitations, easily leading to false negative issues (i.e., correct answers being misjudged as incorrect by the reward function). To improve the accuracy of reward verification, it is recommended that users deploy appropriate reward models according to specific application scenarios. For example, [xVerify](https://github.com/IAAR-Shanghai/xVerify) is an answer verification tool specifically designed for evaluating reasoning models, capable of accurately extracting final answers and intelligently comparing the equivalence of mathematical expressions in different forms.
 
-Deploy the model:
+Users can deploy reward models using vLLM with the following example command:
+
 ```bash
-python3 -m vllm.entrypoints.openai.api_server --model IAAR-Shanghai/xVerify-0.5B-I --enable-chunked-prefill --served-model-name IAAR-Shanghai/xVerify-0.5B-I --max-model-len 8192 --host 0.0.0.0 --port 8888
+# Set reward model service address and model path
+export REWARD_MODEL_URL=http://<your_server_ip>:8888/v1
+export REWARD_MODEL_PATH=<your_reward_model_path>
+export REWARD_MODEL_NAME=<your_reward_model_name>
+# Start reward model service (deployed with vLLM)
+python3 -m vllm.entrypoints.openai.api_server \
+  --model ${REWARD_MODEL_PATH} \
+  --enable-chunked-prefill \
+  --served-model-name ${REWARD_MODEL_NAME} \
+  --max-model-len 8192 \
+  --host 0.0.0.0 \
+  --port 8888
 ```
+
+**Note: Any third-party projects or artifacts you use are subject to applicable license terms and not licensed under MAIR-HUB.**
 
 ### Start RAY
 
 For single-node training, start ray with the following command:
 ```bash
-# Set the URL for the xVerify service
-export XVERIFY_URL=http://${xVerify_IP}:8888/v1
 ray start --head --node-ip-address 0.0.0.0 --port=6379 --block 
 ```
 
@@ -161,7 +183,6 @@ For multi-node training, start ray with the following commands:
 ```bash
 # Assuming there are multiple nodes
 # Execute on the master node (MASTER_NODE_IP is the IP address of the master node)
-export XVERIFY_URL=http://${xVerify_IP}:8888/v1  # URL for the xVerify service
 ray start --head --node-ip-address=${MASTER_NODE_IP} --port=6379 --block 
 
 # Execute on other nodes
@@ -172,35 +193,38 @@ ray start --address ${MASTER_NODE_IP}:6379 --block
 
 An interesting finding is that even when using only text data for reinforcement learning training, VLM models can achieve significant improvements in visual tasks. This indicates that the reasoning patterns and knowledge structures contained in text-only data can transfer to multimodal tasks.
 
-The command for training with the Skywork-OR1 text-only dataset is as follows:
+Our experiments are based on the Qwen2.5-VL-7B-Instruct model, running in an environment with 8 GPUs on a single machine. When training with text-only datasets, execute the following command on the master node:
 
 ```bash
 # Train with text-only data
-bash run_qwen2.5-vl-3b-instrcut-text.sh
+bash run_qwen2.5-vl-7b-instrcut-text.sh
 ```
 
 ### Multimodal Data Training
 
-Our experiments are based on the Qwen2.5-VL-3B-Instruct model, running in an environment with 8 GPUs on a single machine. After training with the mathematical multimodal data introduced in this article, the model's performance shows significant improvement compared to the baseline. Run the following command on the master node to start training:
+The multimodal training command is similar to text training, as follows:
 
 ```bash
 # Train with multimodal data
-bash run_qwen2.5-vl-3b-instrcut-multimodal.sh
+bash run_qwen2.5-vl-7b-instrcut-multimodal.sh
 ```
 
-### Two-Stage Training
+### Mixed Training
 
-Our experiments show that combining text and multimodal data for two-stage training can achieve the best results. The specific method is:
-1. First stage: Use Skywork-OR1 text data for reinforcement learning training to enhance the model's basic reasoning ability
-2. Second stage: Based on the first-stage model, use mathematical multimodal data for further reinforcement learning training (set the MODEL_PATH in the multimodal script to the model path from the first stage training)
+Experimental results show that combining text data with multimodal data for training can significantly improve the model's overall performance. This mixed training approach not only fully leverages the advantages of large-scale text data in reasoning and knowledge transfer, but also integrates the visual understanding capabilities brought by multimodal data, thus enabling the model to achieve improvements in both text understanding and visual reasoning.
 
-This method fully utilizes the scale advantage of text data and the visual information of multimodal data, significantly improving the model in both text understanding and visual understanding.
+It should be noted that currently VeRL does not support direct mixed training of text and multimodal data. To address this limitation, we added a blank image to text data samples to make their format consistent with multimodal data, thus achieving unified training of both types of data.
+
+
+```
+bash run_qwen2.5-vl-7b-instrcut-text-multimodal.sh
+```
 
 ## Experiment Curves
-The following figure shows the trend of reward values during training with multimodal data. As training progresses, the reward value steadily increases, indicating that the model's ability in mathematical reasoning tasks is continuously strengthening:
+The following figure shows the trend of reward values during training with mixed data. As training progresses, the reward value steadily increases, indicating that the model's ability in mathematical reasoning tasks is continuously strengthening:
 
 ![reward curve](./assets/reward.png)
-The following figure shows the trend of model response length during training with multimodal data. It can be observed that as training deepens, the model's response length increases somewhat, but the growth is moderate, typically stabilizing at around 400 tokens, avoiding excessively verbose output:
+The following figure shows the trend of model response length during training with mixed data. It can be observed that as training deepens, the model's response length increases somewhat.
 ![response length curve](./assets/response-length.png)
 
 ## Evaluation Experiments
@@ -217,10 +241,10 @@ The evaluation method adopts Pass@1[8], which generates 8 answers for each quest
 
 |  | AIME 2024 | MATH 500 | GPQA-Diamond |
 | --- | --- | --- | --- |
-| Qwen2.5-VL-3B-Instruct | 2.92 | 59.50 | 27.02 |
-| Qwen2.5-VL-3B-Instruct-RL-Text | 5.21 | 68.45 | 25.51 |
-| Qwen2.5-VL-3B-Instruct-RL-Multimodal | 3.75 | 62.70 | 40.66 |
-| Qwen2.5-VL-3B-Instruct-RL-Text-Multimodal | 3.96 | 63.95 | 34.85 |
+| Qwen2.5-VL-7B-Instruct | 5.2 | 64.6 | 30.7 |
+| Qwen2.5-VL-7B-Instruct-RL-Text | 6.9 | 68.0 | 35.5 |
+| Qwen2.5-VL-7B-Instruct-RL-Multimodal | 5.0 | 66.3 | 33.7 |
+| Qwen2.5-VL-7B-Instruct-RL-Text-Multimodal | 5.8 | 67.1 | 31.3 |
 ### Multimodal Task Evaluation
 
 Multimodal evaluation covers various types of datasets:
@@ -263,41 +287,42 @@ python3 -m lmms_eval \
   </tr>
   </tr>
   <tr>
-    <td> Qwen2.5-VL-3B-Instruct </td>
-    <td style="text-align: center;">32.8</td>
-    <td style="text-align: center;">56.6</td>
-    <td style="text-align: center;">1138.6</td>
-    <td style="text-align: center;">309.6</td>
-    <td style="text-align: center;">40.7</td>
+
+    <td> Qwen2.5-VL-7B-Instruct </td>
+    <td style="text-align: center;">46.7</td>
+    <td style="text-align: center;">56.0</td>
+    <td style="text-align: center;">1484.1</td>
+    <td style="text-align: center;">703.6</td>
+    <td style="text-align: center;">62.9</td>
   </tr>
   <tr>
-    <td> Qwen2.5-VL-3B-Instruct-RL-Text </td>
-    <td style="text-align: center;">47.6</td>
-    <td style="text-align: center;">62.3</td>
-    <td style="text-align: center;">1190.9</td>
-    <td style="text-align: center;">272.9</td>
-    <td style="text-align: center;">55.6</td>
+    <td> Qwen2.5-VL-7B-Instruct-RL-Text </td>
+    <td style="text-align: center;">51.4</td>
+    <td style="text-align: center;">68.0</td>
+    <td style="text-align: center;">1573.7</td>
+    <td style="text-align: center;">690.0</td>
+    <td style="text-align: center;">64.6</td>
   </tr>
   <tr>
-    <td> Qwen2.5-VL-3B-Instruct-RL-Multimodal </td>
-    <td style="text-align: center;">38.5</td>
-    <td style="text-align: center;">61.9</td>
-    <td style="text-align: center;">1391.8</td>
-    <td style="text-align: center;">283.2</td>
-    <td style="text-align: center;">56.3</td>
+    <td> Qwen2.5-VL-7B-Instruct-RL-Multimodal </td>
+    <td style="text-align: center;">51.5</td>
+    <td style="text-align: center;">70.2</td>
+    <td style="text-align: center;">1585.9</td>
+    <td style="text-align: center;">454.0</td>
+    <td style="text-align: center;">62.5</td>
   </tr>
   <tr>
-    <td> Qwen2.5-VL-3B-Instruct-RL-Text-Multimodal </td>
-    <td style="text-align: center;">44.8</td>
-    <td style="text-align: center;">64.1</td>
-    <td style="text-align: center;">1469.2</td>
-    <td style="text-align: center;">285.3</td>
-    <td style="text-align: center;">57.7</td>
+    <td> Qwen2.5-VL-7B-Instruct-RL-Text-Multimodal </td>
+    <td style="text-align: center;">51.8</td>
+    <td style="text-align: center;">71.4</td>
+    <td style="text-align: center;">1603.5</td>
+    <td style="text-align: center;">606.4</td>
+    <td style="text-align: center;">64.5</td>
   </tr>
 </table>
 
 ### Conclusion
 - Using only text data for reinforcement learning training can also achieve significant improvements in visual tasks.
-- Models trained with multimodal reinforcement learning show improvements in both text and multimodal tasks compared to baseline models, but the improvement is greater in multimodal tasks.
 - When performing reinforcement learning on multimodal data, the model's response length increases moderately, typically maintaining around 400-500 tokens.
-- Two-stage training (text first, then multimodal) can achieve the best results, fully combining the advantages of both data types.
+- Mixed training can achieve the best results.
+
