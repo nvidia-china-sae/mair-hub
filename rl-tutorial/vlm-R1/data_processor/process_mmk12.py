@@ -77,8 +77,8 @@ if __name__ == '__main__':
     dataset = dataset.filter(lambda x: x['reward_model']['ground_truth'] is not None and x['prompt'][0]['content'].count("<image") == 1, num_proc=8)
     print("after filter", len(dataset))
     # cast images to datasets.Image
-    dataset = dataset.cast_column('images', Sequence(feature=ImageData()))
     valid_images(dataset)
+    dataset = dataset.cast_column('images', Sequence(feature=ImageData(decode=True)))
     
     dataset.to_parquet(os.path.join(args.local_dir, 'mmk12.parquet'))
     print(f"{data_source} dataset has been saved to {args.local_dir} with {len(dataset)} samples")

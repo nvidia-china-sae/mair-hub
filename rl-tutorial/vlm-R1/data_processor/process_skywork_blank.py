@@ -19,10 +19,12 @@ import datasets
 import argparse
 import ast
 from PIL import Image
+
 from datasets import Sequence
 from datasets import Image as ImageData
-
 from transformers import AutoTokenizer
+
+from .utils import ImageProcessor, valid_images
 
 def make_map_fn(split, data_source, system, blank_image):
 
@@ -74,7 +76,7 @@ if __name__ == '__main__':
     dataset = dataset.filter(function=lambda x: filter_by_token_length(tokenizer, x), num_proc=128)
     print(f"after filter: {len(dataset)}")
     # cast images to datasets.Image
-    dataset = dataset.cast_column('images', Sequence(feature=ImageData()))
     valid_images(dataset)
+    dataset = dataset.cast_column('images', Sequence(feature=ImageData(decode=True)))
     dataset.to_parquet(os.path.join(args.local_dir, 'skywork_or1_blank.parquet'))
     print(f"{data_source} dataset has been saved to {args.local_dir} with {len(dataset)} samples")

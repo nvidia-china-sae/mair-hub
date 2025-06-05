@@ -13,11 +13,11 @@ mkdir -p ./data
 LOCAL_DIR="./data"
 # Define datasets and their corresponding Python modules
 declare -A DATASETS=(
-    # ["MMK12"]="process_mmk12"
-    # ["Skywork"]="process_skywork"
+    ["MMK12"]="process_mmk12"
+    ["Skywork"]="process_skywork"
     ["Skywork-blank"]="process_skywork_blank"
-    # ["AIME24"]="process_aime24"
-    # ["Math500"]="process_math500"
+    ["AIME24"]="process_aime24"
+    ["Math500"]="process_math500"
 )
 # Loop through datasets and process each one
 for DATASET in "${!DATASETS[@]}"; do
