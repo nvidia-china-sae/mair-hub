@@ -30,8 +30,8 @@ docker run --runtime=nvidia -it --rm --shm-size="10g" --cap-add=SYS_ADMIN \
 登录容器后，安装 verl 和必要的依赖项
 
 ```bash
-# install the nightly version (recommended)
-git clone https://github.com/volcengine/verl && cd verl && pip3 install -e .
+# install the recommended version
+git clone https://github.com/volcengine/verl && cd verl && git checkout ee8c34749df90b88d00439a09a1f2acb51d71bc3 && pip3 install -e .
 
 # 如果需要使用 wandb 来监控实验，需要 wandb login 来登录
 wandb login
@@ -135,8 +135,8 @@ bash process_all_datasets.sh
 最新版 veRL 支持通过传入 Python 文件的方式自定义 Reward function。在本实验中，我们采用 [reward_model.py](./src/reward_model.py) 作为奖励函数。
 
 其核心逻辑如下：
-- 首先检验模型输出是否符合 <think>...</think><answer>...</answer> 格式，若不符合则返回 -1.0；
-- 从 <answer> 标签中提取答案，使用规则匹配方式与 ground truth 比对，若匹配成功则返回 1.0；
+- 首先检验模型输出是否符合 \<think\>...\</think\>\<answer\>...\</answer\> 格式，若不符合则返回 -1.0；
+- 从 \<answer\> 标签中提取答案，使用规则匹配方式与 ground truth 比对，若匹配成功则返回 1.0；
 - 若规则匹配不成功，则调用奖励模型进行答案验证，如果答案与标准答案匹配则返回 1.0，否则返回 -1.0。
 
 ### Prompt Template
@@ -152,7 +152,7 @@ You first think about the reasoning process as an internal monologue and then pr
 ## 训练
 ### 部署奖励模型
 
-单纯依赖基于数学规则的验证作为奖励函数存在明显局限性，容易出现假阴性问题（即答案正确但奖励函数误判为错误）。为了提升奖励验证的准确性，建议用户根据具体应用场景部署合适的奖励模型。例如 [xVerify](https://github.com/IAAR-Shanghai/xVerify) 是一个专为评估推理模型设计的答案验证工具，能够准确提取最终答案并智能比较不同形式的数学表达式等价性。
+单纯依赖基于数学规则的验证作为奖励函数存在明显局限性，容易出现假阴性问题（即答案正确但奖励函数误判为错误）。为了提升奖励验证的准确性，建议用户根据具体应用场景部署合适的奖励模型。例如，[xVerify](https://github.com/IAAR-Shanghai/xVerify) 是一个专为评估推理模型设计的答案验证工具，能够准确提取最终答案并智能比较不同形式的数学表达式等价性。
 
 用户可以使用 vLLM 部署奖励模型，示例命令如下：
 ```
@@ -242,7 +242,7 @@ bash run_qwen2.5-vl-7b-instrcut-text-multimodal.sh
 | Qwen2.5-VL-7B-Instruct | 5.2 | 64.6 | 30.7 |
 | Qwen2.5-VL-7B-Instruct-RL-Text | 6.9 | 68.0 | 35.5 |
 | Qwen2.5-VL-7B-Instruct-RL-Multimodal | 5.0 | 66.3 | 33.7 |
-| Qwen2.5-VL-7B-Instruct-RL-Text-Multimodal | 5.8 | 67.1 | - |
+| Qwen2.5-VL-7B-Instruct-RL-Text-Multimodal | 5.8 | 67.1 | 31.3 |
 ### 多模态任务评估
 
 多模态评估覆盖了多种类型的数据集：

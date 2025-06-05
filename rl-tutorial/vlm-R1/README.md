@@ -30,8 +30,8 @@ docker run --runtime=nvidia -it --rm --shm-size="10g" --cap-add=SYS_ADMIN \
 After logging into the container, install verl and necessary dependencies:
 
 ```bash
-# install the nightly version (recommended)
-git clone https://github.com/volcengine/verl && cd verl && pip3 install -e .
+# install the recommended version
+git clone https://github.com/volcengine/verl && cd verl && git checkout ee8c34749df90b88d00439a09a1f2acb51d71bc3 && pip3 install -e .
 
 # If you need to use wandb to monitor experiments, you need to login with wandb
 wandb login
@@ -133,8 +133,8 @@ The multimodal training set uses [MMK12](https://huggingface.co/datasets/Fanqing
 The latest version of veRL supports customizing reward functions by passing in Python files. In this experiment, we use [reward_model.py](./src/reward_model.py) as the reward function.
 
 Its core logic is as follows:
-- First, check if the model output conforms to the <think>...</think><answer>...</answer> format; if not, return -1.0;
-- Extract the answer from the <answer> tag, use rule-based matching to compare with the ground truth, and return 1.0 if the match is successful;
+- First, check if the model output conforms to the \<think\>...\</think\>\<answer\>...\</answer\> format; if not, return -1.0;
+- Extract the answer from the \<answer\> tag, use rule-based matching to compare with the ground truth, and return 1.0 if the match is successful;
 - If rule-based matching fails, call the reward model for answer verification; if the answer matches the standard answer, return 1.0, otherwise return -1.0.
 
 ### Prompt Template
@@ -243,7 +243,7 @@ The evaluation method adopts Pass@1[8], which generates 8 answers for each quest
 | Qwen2.5-VL-7B-Instruct | 5.2 | 64.6 | 30.7 |
 | Qwen2.5-VL-7B-Instruct-RL-Text | 6.9 | 68.0 | 35.5 |
 | Qwen2.5-VL-7B-Instruct-RL-Multimodal | 5.0 | 66.3 | 33.7 |
-| Qwen2.5-VL-7B-Instruct-RL-Text-Multimodal | - | - | - |
+| Qwen2.5-VL-7B-Instruct-RL-Text-Multimodal | 5.8 | 67.1 | 31.3 |
 ### Multimodal Task Evaluation
 
 Multimodal evaluation covers various types of datasets:

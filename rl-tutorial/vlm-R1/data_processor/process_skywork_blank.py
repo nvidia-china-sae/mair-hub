@@ -19,6 +19,8 @@ import datasets
 import argparse
 import ast
 from PIL import Image
+from datasets import Sequence
+from datasets import Image as ImageData
 
 from transformers import AutoTokenizer
 
@@ -71,6 +73,8 @@ if __name__ == '__main__':
     print(f"before filter: {len(dataset)}")
     dataset = dataset.filter(function=lambda x: filter_by_token_length(tokenizer, x), num_proc=128)
     print(f"after filter: {len(dataset)}")
-
+    # cast images to datasets.Image
+    dataset = dataset.cast_column('images', Sequence(feature=ImageData()))
+    valid_images(dataset)
     dataset.to_parquet(os.path.join(args.local_dir, 'skywork_or1_blank.parquet'))
     print(f"{data_source} dataset has been saved to {args.local_dir} with {len(dataset)} samples")

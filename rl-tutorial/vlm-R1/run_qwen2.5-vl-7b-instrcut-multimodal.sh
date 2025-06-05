@@ -4,9 +4,9 @@ SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 
 NNODES=1
 project_name='DAPO'
-exp_name='DAPO-Qwen2.5-VL-3B-Vision-Multimodal'
-MODEL_PATH=Qwen/Qwen2.5-VL-3B-Instruct
-WORKING_DIR=/workspace/verl
+exp_name='DAPO-Qwen2.5-VL-7B-Vision-Multimodal'
+MODEL_PATH=Qwen/Qwen2.5-VL-7B-Instruct
+WORKING_DIR=${SCRIPT_DIR}
 CKPTS_DIR=${WORKING_DIR}/ckpts/${project_name}/${exp_name}
 # Multimodal
 TRAIN_FILE="[${SCRIPT_DIR}/data/mmk12.parquet]"

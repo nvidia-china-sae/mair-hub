@@ -341,7 +341,7 @@ def compute_score(data_source, solution_str, ground_truth, extra_info):
 
     model = OpenAI(
         base_url=extra_info["url"],
-        api_key="sk-proj-1234567890"
+        api_key="EMPTY"
     )
 
     prompt = PROMPT.format(question=extra_info["question"], output=final_answer, answer=ground_truth)
