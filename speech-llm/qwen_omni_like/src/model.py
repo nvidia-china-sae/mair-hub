@@ -572,7 +572,7 @@ class SPEECH_LLM(nn.Module):
         input_ids: torch.LongTensor = None,  # Prompt input_ids
         attention_mask: torch.Tensor = None,  # Prompt attention_mask
         max_text_new_tokens: int = 1024,
-        max_speech_new_tokens: int = 2048,  # Max length for speech tokens
+        max_speech_new_tokens: int = 1024,  # Max length for speech tokens
         llm_kwargs: dict = None,  # Kwargs for text LLM generate
         codec_lm_kwargs: dict = None,  # Kwargs for codec LM (e.g., temperature for sampling) - NOT IMPLEMENTED YET
     ) -> Tuple[torch.LongTensor, List[List[int]]]:

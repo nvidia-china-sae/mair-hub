@@ -15,6 +15,13 @@ log() {
 ngpu=4
 exp_dir=./exp/exp_ultrachat_voiceassistant_sft
 
+if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
+  log "stage -1: Average checkpoints"
+  python3 ./src/avg_checkpoint.py \
+    --exp-dir $exp_dir \
+    --output-name epoch-9-avg-5.pt
+fi
+
 if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
   log "stage 0: Clone CosyVoice repo and install requirements inside the container"
   git clone --recursive https://github.com/FunAudioLLM/CosyVoice.git /workspace/CosyVoice
@@ -24,8 +31,13 @@ if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
 
   huggingface-cli download --local-dir models/CosyVoice2-0.5B FunAudioLLM/CosyVoice2-0.5B
 
-  # For Gradio demo, we follow https://arxiv.org/abs/2412.15649 to use ASR model to decode the history speech as context.
   pip install sherpa-onnx
+  en_model_path=models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8
+  if [ ! -d $en_model_path ]; then
+    wget -nc https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2
+    tar xvf sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2 -C models
+  fi
+# For Gradio demo, we follow https://arxiv.org/abs/2412.15649 to use ASR model to decode the history speech as context.
   model_path=models/sherpa-onnx-paraformer-zh-2023-09-14
   if [ ! -d $model_path ]; then
     wget -nc https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-zh-2023-09-14.tar.bz2
@@ -118,15 +130,46 @@ fi
 
 if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
   log "stage 4: Distributed decoding voicebench with speech output"
+  datasets=(commoneval alpacaeval_full wildvoice ifeval openbookqa sd-qa advbench bbh mmsu)
+  for subset_name in ${datasets[@]}; do
+    if [ "$subset_name" == "sd-qa" ]; then
+      split_name="usa"
+    else
+      split_name="test"
+    fi
+    output_dir=$exp_dir/results/$subset_name-$split_name-epoch9-avg5
+    torchrun --nproc_per_node=8 ./src/decode_dist.py \
+      --speech-encoder-path-or-name models/large-v2.pt  \
+      --llm-path-or-name models/Qwen2.5-0.5B-Instruct \
+      --pretrained-model-path $exp_dir/epoch-9-avg-5.pt \
+      --token2wav-path models/CosyVoice2-0.5B \
+      --use-flash-attn True \
+      --enable-speech-output False \
+      --use-lora True \
+      --output-dir $output_dir \
+      --subset-name $subset_name \
+      --split-name $split_name
+    cat $output_dir/*.jsonl > $output_dir/$subset_name-$split_name.jsonl
+  done
+fi
 
-  torchrun --nproc_per_node=4 ./src/decode_dist.py \
-    --speech-encoder-path-or-name models/large-v2.pt  \
-    --llm-path-or-name models/Qwen2.5-0.5B-Instruct \
-    --pretrained-model-path $exp_dir/epoch-9/pytorch_model.bin \
-    --use-flash-attn True \
-    --enable-speech-output False \
-    --use-lora True \
-    --output-dir $exp_dir/results/commoneval_speech_output \
-    --subset-name commoneval \
-    --split-name test
+if [ $stage -le 5 ] && [ $stop_stage -ge 5 ]; then
+  log "stage 5: ASR decoding for speech output"
+  split_name=test
+  subset_name=commoneval
+  wav_dir=$exp_dir/results/$subset_name-$split_name-epoch9-avg5
+  manifest_file=$wav_dir/$subset_name-$split_name.jsonl
+  model_path=models/sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8
+  python3 src/offline-decode-files.py  \
+    --tokens=$model_path/tokens.txt \
+    --encoder=$model_path/encoder.int8.onnx \
+    --decoder=$model_path/decoder.int8.onnx \
+    --joiner=$model_path/joiner.int8.onnx \
+    --num-threads=2 \
+    --decoding-method=greedy_search \
+    --debug=false \
+    --sample-rate=24000 \
+    --log-dir $wav_dir \
+    --feature-dim=80 \
+    --manifest $manifest_file --name $subset_name-$split_name
 fi

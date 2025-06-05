@@ -43,9 +43,10 @@ import torch
 import torch.distributed as dist
 import torch.nn.functional as F
 import whisper
-from datasets import load_dataset
+from datasets import load_dataset, concatenate_datasets
 from torch.utils.data import DataLoader, Dataset, DistributedSampler
 from tqdm import tqdm
+import soundfile as sf
 from train import DEFAULT_SPEECH_TOKEN, add_model_arguments, add_training_arguments, get_model
 from transformers import AutoTokenizer
 from whisper_encoder_forward_monkey_patch import replace_whisper_encoder_forward
@@ -99,6 +100,12 @@ def get_args():
         type=str,
         default="./assets/common_voice_en_2586258.wav",
         help="The path to the prompt speech",
+    )
+    parser.add_argument(
+        "--token2wav-path",
+        type=str,
+        default=None,
+        help="Token2Wav path, default to %(default)r",
     )
     add_model_arguments(parser)
     add_training_arguments(parser)
@@ -174,13 +181,20 @@ def main():
     assert torch.cuda.is_available()
     world_size, local_rank, rank = init_distributed()
     device = torch.device(f"cuda:{local_rank}")
-
-    dataset = load_dataset(
-        "hlt-lab/voicebench",
-        args.subset_name,
-        split=args.split_name,
-        trust_remote_code=True,
-    )
+    if args.subset_name != "mmsu":
+        dataset = load_dataset(
+            "hlt-lab/voicebench",
+            args.subset_name,
+            split=args.split_name,
+            trust_remote_code=True,
+        )
+    else:
+        dataset = load_dataset(
+            "hlt-lab/voicebench",
+            "mmsu",
+            trust_remote_code=True,
+        )
+        dataset = concatenate_datasets([dataset[subset] for subset in dataset])
 
     model, tokenizer = get_model(args)
     model.to(device)
@@ -222,9 +236,7 @@ def main():
         sys.path.append("/workspace/CosyVoice/third_party/Matcha-TTS")
         from web_demo import audio_decode_cosyvoice2
         token2wav_model = CosyVoice2(
-            model_path=args.token2wav_path,
-            device=device,
-            use_lora=args.use_lora,
+            args.token2wav_path, load_jit=False, load_trt=False, fp16=False
         )
         prompt_speech_16k = load_wav(args.prompt_speech_path, 16000)
 
