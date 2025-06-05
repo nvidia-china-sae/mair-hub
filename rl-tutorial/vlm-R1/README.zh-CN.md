@@ -125,8 +125,8 @@ bash process_all_datasets.sh
 文本训练使用 [Skywork-OR1-RL-Data](https://huggingface.co/datasets/Skywork/Skywork-OR1-RL-Data) 数据集，这是一个高质量的纯文本数据集，包含大量数学任务样本。我们的实验表明，即使仅使用纯文本数据训练，也能有效提升多模态模型在视觉任务上的表现。
 
 #### 多模态数据集
-多模态训练集使用[MMK12](https://huggingface.co/datasets/FanqingM/MMK12)， 这是手工收集的开源多模态推理数据集，总计约 15K 个样本。
 
+多模态训练集使用[MMK12](https://huggingface.co/datasets/FanqingM/MMK12)， 这是手工收集的开源多模态推理数据集，总计约 15K 个样本。
 
 ## 自定义 Reward Function 与 Prompt Template
 

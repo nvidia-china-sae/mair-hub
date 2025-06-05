@@ -126,6 +126,7 @@ Text training uses the [Skywork-OR1-RL-Data](https://huggingface.co/datasets/Sky
 #### Multimodal Dataset
 The multimodal training set uses [MMK12](https://huggingface.co/datasets/FanqingM/MMK12), which is a manually collected open-source multimodal reasoning dataset with a total of approximately 15K samples.
 
+
 ## Custom Reward Function and Prompt Template
 
 ### Reward Function
@@ -286,6 +287,7 @@ python3 -m lmms_eval \
   </tr>
   </tr>
   <tr>
+
     <td> Qwen2.5-VL-7B-Instruct </td>
     <td style="text-align: center;">46.7</td>
     <td style="text-align: center;">56.0</td>
@@ -323,3 +325,4 @@ python3 -m lmms_eval \
 - Using only text data for reinforcement learning training can also achieve significant improvements in visual tasks.
 - When performing reinforcement learning on multimodal data, the model's response length increases moderately, typically maintaining around 400-500 tokens.
 - Mixed training can achieve the best results.
+
