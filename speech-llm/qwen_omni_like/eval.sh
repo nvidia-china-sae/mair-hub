@@ -115,3 +115,18 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
   wait
   log "All client jobs have completed."
 fi
+
+if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
+  log "stage 4: Distributed decoding voicebench with speech output"
+
+  torchrun --nproc_per_node=4 ./src/decode_dist.py \
+    --speech-encoder-path-or-name models/large-v2.pt  \
+    --llm-path-or-name models/Qwen2.5-0.5B-Instruct \
+    --pretrained-model-path $exp_dir/epoch-9/pytorch_model.bin \
+    --use-flash-attn True \
+    --enable-speech-output False \
+    --use-lora True \
+    --output-dir $exp_dir/results/commoneval_speech_output \
+    --subset-name commoneval \
+    --split-name test
+fi
