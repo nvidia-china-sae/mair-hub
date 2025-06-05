@@ -31,7 +31,7 @@ The training pipeline consists of two stages:
 | **2** | UltraChat + VoiceAssistant | Speech Adapter + LLM LoRA + Speech Codec LM (Talker) | CosyVoice 2 25 Hz tokens |
 
 > **Note**  
-> For the speech-continuation task, we use the prepared dataset available at <https://huggingface.co/datasets/fixie-ai/librispeech_asr>.  
+> For the speech-continuation task, we use the prepared dataset available at [fixie-ai/librispeech_asr](https://huggingface.co/datasets/fixie-ai/librispeech_asr).  
 > Additional details can be found in [this paper](https://arxiv.org/abs/2309.00916).
 
 ### 2.1 Prerequisites
@@ -93,10 +93,8 @@ bash eval.sh 4 4
 bash eval.sh 5 5
 ```
 
-We mainly use [VoiceBench](https://github.com/MatthewCYM/VoiceBench) to assess speech-to-text quality.  
-For alignment between generated speech and text, we transcribe the speech with [parakeet-v2](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) and compute the word error rate (WER).
-
 ### 3.2 VoiceBench Scores
+We mainly use [VoiceBench](https://github.com/MatthewCYM/VoiceBench) to assess speech-to-text quality.  
 
 | Model | AlpacaEval | CommonEval | WildVoice | SD-QA | MMSU | OBQA | BBH | IFEval | AdvBench | Overall |
 |-------|------------|------------|-----------|-------|------|------|-----|--------|----------|---------|
@@ -107,11 +105,8 @@ For alignment between generated speech and text, we transcribe the speech with [
 | Pre-train (LibriSpeech + GigaSpeech + PeopleSpeech) → SFT + InstructS2S | 3.06 | 2.87 | 2.48 | 21.70 | 25.60 <br>(fail 8) | 25.27 <br>(5.2 % fail) | 50.9 | 14.85 | 94.81 | **44.59** |
 
 ### 3.3 Word Error Rate
+For alignment between generated speech and text, we transcribe the speech with [parakeet-v2](https://huggingface.co/nvidia/parakeet-tdt-0.6b-v2) and compute the word error rate (WER).
 
 | Model | WER (CommonEval subset) | Details |
 |-------|------------------------|---------|
 | Pre-train (LibriSpeech speech-continuation + ASR) → SFT | **7.96 %** | 131 insertions, 667 deletions, 292 substitutions |
-
----
-
-Feel free to open an issue or a pull request if you have any questions or improvements!
