@@ -9,6 +9,7 @@ The following directories contain specialized resources for different aspects of
 | Directory | Description |
 |-----------|-------------|
 | [rl-tutorial](./rl-tutorial/) | Reinforcement Learning tutorials, including RL experiments with step-by-step guidance for reproduction |
+| [speech-llm](./speech-llm/) | Speech LLM training recipes, including Qwen-omni-like speech2speech model training etc. |
 | [external-resources](#external-resources) | Curated links to other valuable multimodal AI resources |
 
 ### RL-Tutorial
@@ -18,6 +19,12 @@ The [rl-tutorial](./rl-tutorial/) directory contains resources focused on reinfo
 - [r1-zero](./rl-tutorial/r1-zero/): Tutorial of using the veRL framework to reproduce the reinforcement learning training process of DeepSeek-R1-Zero in the mathematics domain.
 - [r1-like](./rl-tutorial/r1-like/): Tutorial of using the openRLHF framework to reproduce the reinforcement learning training process of DeepSeek-R1 in the mathematics domain.
 - [vlm-R1](./rl-tutorial/vlm-R1/): Tutorial of using the veRL framework to train VLM models with reinforcement learning using both text and multimodal data to enhance reasoning capabilities in the mathematics domain.
+
+### Speech-LLM
+
+The [speech-llm](./speech-llm/) directory provides resources for training Speech LLMs:
+
+- [qwen-omni-like](./speech-llm/qwen_omni_like/): Recipe for training **Qwen2.5-Omni-style** speech-to-speech (S2S) models.
 
 ### External Resources
 
