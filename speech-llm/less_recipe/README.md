@@ -12,8 +12,8 @@ Pipeline is illustrated in the below figure, taking the Spanish-to-English Autom
  4. Refine the pseudo labels with an LLM, and perform data filtering using proper **hypo_wer**
  5. Combine the supervised data and pseudo-labeled unsupervised data together, and finetune the SFM. Go step 3 and iterate until converge
  
- <p align="center">
-  <img src="assets/less_pipeline.pdf" width="800"/>
+<p align="center">
+<iframe src="assets/less_pipeline.pdf" height="500" frameborder="0" />
 </p>
 
 ## Steps
