@@ -13,7 +13,7 @@ Pipeline is illustrated in the below figure, taking the Spanish-to-English Autom
  5. Combine the supervised data and pseudo-labeled unsupervised data together, and finetune the SFM. Go step 3 and iterate until converge
  
 <p align="center">
-<iframe src="assets/less_pipeline.pdf" height="500" frameborder="0" />
+  <img src="assets/less_pipeline.png" width="800"/>
 </p>
 
 ## Steps
