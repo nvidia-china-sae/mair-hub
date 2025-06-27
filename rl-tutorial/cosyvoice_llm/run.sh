@@ -13,7 +13,7 @@ log() {
 
 
 if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
-  log "stage 0: Download models and data"
+  log "stage 0: prepare data into verl format"
   python prepare_data.py \
     --train_file data/emilia_zh-cosy-tiny-train.jsonl \
     --test_file data/emilia_zh-cosy-tiny-test.jsonl \
@@ -21,13 +21,16 @@ if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
 
 fi
 
-
+export PYTHONPATH=/workspace/CosyVoice
 if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
-  log "stage 1: Train the model"
+  log "stage 1: start whisper server"
   CUDA_VISIBLE_DEVICES=2 \
   python3 whisper_server.py \
     --port 8001 \
-    --model large-v3-turbo
+    --model large-v3-turbo \
+    --token2wav-path /workspace/CosyVoice2-0.5B \
+    --prompt-text "吃燕窝就选燕之屋，本节目由26年专注高品质燕窝的燕之屋冠名播出。豆奶牛奶换着喝，营养更均衡，本节目由豆本豆豆奶特约播出。" \
+    --prompt-speech-path ./assets/prompt_audio.wav
 fi
 
 
@@ -74,9 +77,15 @@ fi
 
 if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
   log "stage 3: Test the model"
-  export PYTHONPATH=/workspace/CosyVoice
   python3 test_cosyvoice.py \
     --token2wav-path /workspace/CosyVoice2-0.5B \
     --prompt-text "吃燕窝就选燕之屋，本节目由26年专注高品质燕窝的燕之屋冠名播出。豆奶牛奶换着喝，营养更均衡，本节目由豆本豆豆奶特约播出。" \
     --prompt-speech-path ./assets/prompt_audio.wav
+fi
+
+if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
+  log "stage 4: Test the model"
+  python3 tts_cer.py \
+    --input data/emilia_zh-cosy-tiny-test.jsonl \
+    --max-samples 5
 fi
