@@ -68,7 +68,7 @@ pip install math-verify[antlr4_9_3]
 | Training Parameters | data.train_batch_size | Number of prompts consumed in each RL step |
 | Training Parameters | actor_rollout_ref.rollout.n | How many responses to generate for each prompt during rollout. Must be greater than 1 for GRPO and GLOO |
 | Training Parameters | actor_rollout_ref.rollout.temperature | Temperature coefficient for generating responses during rollout. Higher values result in stronger randomness |
-| Training Parameters | actor_rollout_ref.actor.ppo_mini_batch_size | Batch size when updating actor parameters after rollout, must be greater than `data.train_batch_size` |
+| Training Parameters | actor_rollout_ref.actor.ppo_mini_batch_size | Batch size when updating actor parameters after rollout, must be less than and divisible by `data.train_batch_size` (e.g. `data.train_batch_size`=16, `actor_rollout_ref.actor.ppo_mini_batch_size`=8 or 16) |
 | Training Parameters | algorithm.adv_estimator | RL algorithm used, currently supports PPO, GRPO, etc. |
 | Training Parameters | algorithm.kl_ctrl.kl_coef | KL coefficient when calculating token-level rewards. Should be set to 0 for original GRPO |
 | GRPO Parameters | actor_rollout_ref.actor.use_kl_loss | Whether to use external KL loss. Should be set to True for original GRPO algorithm |
