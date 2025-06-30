@@ -20,8 +20,9 @@ from typing import List
 import numpy as np
 import requests
 import torch
-from jiwer import cer
-
+from jiwer import cer, wer
+from pypinyin import lazy_pinyin, Style
+from tn.chinese.normalizer import Normalizer as ZhNormalizer
 
 def _parse_ids(token_str: str) -> List[int]:
     return [int(t) for t in re.findall(r"<\|s_(\d+)\|>", token_str)]
@@ -32,6 +33,7 @@ HEALTH_URL = f"{SERVER.rstrip('/')}/healthz"
 
 # quick health cache to avoid hitting server each call
 _last_health = 0.0
+zh_tn_model = ZhNormalizer(remove_erhua=False, remove_interjections=False, remove_puncts=True, overwrite_cache=False)
 
 def _check_server():
     global _last_health
@@ -72,14 +74,53 @@ def compute_score(
         resp = _remote_whisper(ids, ground_truth)
         nll = float(resp["nll"])
         transcript = resp.get("transcript", "")
+        nll = None
     except Exception as e:
         warnings.warn(f"Whisper server error: {e}; CER-only fallback")
         nll = None
         transcript = ""
 
     # CER utility
-    hyp = transcript if transcript else ground_truth  # in worst case CER=0
-    c = float(cer(ground_truth, hyp))
+    # hyp = transcript if transcript else ground_truth  # in worst case CER=0
+    hyp = transcript
+    ground_truth = zh_tn_model.normalize(ground_truth)
+    hyp = zh_tn_model.normalize(hyp)
+    # remove space
+    # ground_truth = ground_truth.replace(" ", "")
+    # hyp = hyp.replace(" ", "")
+    # upper to lower
+    ground_truth = ground_truth.lower()
+    hyp = hyp.lower()
+    print(f"ground_truth: {ground_truth}")
+    print(f"hyp: {hyp}")
+    # get pinyin of ground_truth and hyp
+
+    ground_truth_pinyin = lazy_pinyin(
+        ground_truth,
+        style=Style.TONE3,
+        tone_sandhi=True,
+        neutral_tone_with_five=True,
+    )
+    hyp_pinyin = lazy_pinyin(
+        hyp,
+        style=Style.TONE3,
+        tone_sandhi=True,
+        neutral_tone_with_five=True,
+    )
+    # c = float(cer(ground_truth, hyp))
+
+    # compute per
+    hyp_pinyin_str = ' '.join(hyp_pinyin)
+    ground_truth_pinyin_str = ' '.join(ground_truth_pinyin)
+    c = float(wer(ground_truth_pinyin_str, hyp_pinyin_str))
+    print(f"ground_truth_pinyin_str: {ground_truth_pinyin_str}")
+    print(f"hyp_pinyin_str: {hyp_pinyin_str}")
+    print(f"c: {c}")
+    # c_lists = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    # beta_c_lists = [1, 2, 3]
+    # for c_list in c_lists:
+    #     for beta_c_list in beta_c_lists:
+    #         print(f"c: {c_list}, beta_c: {beta_c_list}, reward: {1.0 - np.tanh(beta_c_list * c_list)}")
     cer_u = 1.0 - np.tanh(beta_c * c)
 
     # NLL utility
@@ -88,10 +129,11 @@ def compute_score(
     else:
         nll_u = 1e-9
 
-    denom = lambda_c / cer_u + lambda_n / nll_u
-    reward = (lambda_c + lambda_n) / denom if denom > 0 else 0.0
+    #denom = lambda_c / cer_u + lambda_n / nll_u
+    #reward = (lambda_c + lambda_n) / denom if denom > 0 else 0.0
+    reward = cer_u
 
-    print(f"\033[92mCER: {c:.3f}, NLL: {nll}, transcript: {transcript}, Reward: {reward:.4f}\033[0m")
+    # print(f"\033[92mCER: {c:.3f}, NLL: {nll}, transcript: {transcript}, Reward: {reward:.4f}\033[0m")
     return max(0.0, min(1.0, reward))
 
 # CLI quick test

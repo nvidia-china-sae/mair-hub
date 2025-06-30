@@ -34,13 +34,14 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import List
 import sys
-
+from scipy.signal import resample
 import torch
 import whisper  # type: ignore
 import whisper.audio as _wa
 from torch.nn.functional import cross_entropy
 from cosyvoice.cli.cosyvoice import CosyVoice2
 from cosyvoice.utils.file_utils import load_wav
+from whisper_encoder_forward_monkey_patch import replace_whisper_encoder_forward
 
 sys.path.append("/workspace/CosyVoice/third_party/Matcha-TTS")
 
@@ -70,17 +71,14 @@ def get_args():
         default="./assets/common_voice_en_2586258.wav",
         help="The path to the prompt speech for CosyVoice"
     )
+    parser.add_argument(
+        "--remove-whisper-encoder-input-length-restriction",
+        action="store_true",
+        help="Remove the restriction on the input length of the Whisper encoder"
+    )
     
     args, _ = parser.parse_known_args()
     return args
-
-args = get_args()
-
-DEVICE = args.device
-
-# Load Whisper once
-print(f"Loading Whisper '{args.model}' on {DEVICE} …")
-WHISPER = whisper.load_model(args.model, device=DEVICE).eval()
 
 def _get_mel_bins(model) -> int:
     if hasattr(model, "n_mels"):
@@ -91,30 +89,6 @@ def _get_mel_bins(model) -> int:
         return int(model.encoder.conv1.weight.shape[1])
     return 80
 
-REQ_BINS = _get_mel_bins(WHISPER)
-
-# Load CosyVoice2 once
-print("Loading CosyVoice2 …")
-CODEC = CosyVoice2(
-    args.token2wav_path, load_jit=False, load_trt=False, fp16=False
-)
-
-# Load prompt speech if provided
-PROMPT_SPEECH_16K = None
-if args.prompt_speech_path:
-    try:
-        PROMPT_SPEECH_16K = load_wav(args.prompt_speech_path, 16000)
-        print(f"Loaded prompt speech from {args.prompt_speech_path}")
-    except Exception as e:
-        print(f"Warning: Could not load prompt speech: {e}")
-        PROMPT_SPEECH_16K = None
-
-# Tokenizer
-TOKENIZER = whisper.tokenizer.get_tokenizer(multilingual=True, task="transcribe")
-
-# ---------------------------------------------------------------------------
-# CosyVoice2 audio decoding function
-# ---------------------------------------------------------------------------
 def audio_decode_cosyvoice2(
     audio_tokens, prompt_text, prompt_speech_16k, codec_decoder
 ):
@@ -151,12 +125,6 @@ def audio_decode_cosyvoice2(
 
     return audio_hat
 
-# ---------------------------------------------------------------------------
-# FastAPI definitions
-# ---------------------------------------------------------------------------
-app = FastAPI(title="Whisper NLL server", version="0.1.0")
-
-
 class ScoreRequest(BaseModel):
     tokens: List[int] = Field(..., description="Speech token ids (<|s_xxx|>)")
     text: str = Field(..., description="Ground‑truth text for NLL")
@@ -183,28 +151,70 @@ def tokens_to_wav(tokens: List[int]) -> torch.Tensor:
         PROMPT_SPEECH_16K,
         CODEC,
     )
-    
-    # Return audio as float tensor on CPU
-    return audio_hat.squeeze(0).float().cpu()
+    # resample to 16000 using soundfile
+    audio_hat = audio_hat.squeeze(0).float().cpu()
+    print(audio_hat.shape,"audio_hat.shape")
+    audio_hat = audio_hat.numpy()
+    num_samples = int(len(audio_hat) * (16000 / 24000))
+    audio_hat = resample(audio_hat, num_samples)
+
+    audio_hat = torch.from_numpy(audio_hat)
+    print(audio_hat.shape,"after resample audio_hat.shape")
+    return audio_hat
+
+
 
 
 @torch.inference_mode()
-def whisper_nll(wav: torch.Tensor, text: str) -> float:
-    mel = _wa.log_mel_spectrogram(_wa.pad_or_trim(wav.numpy()), n_mels=REQ_BINS)
-    mel = torch.as_tensor(mel, device=DEVICE)[None]
-    tgt = torch.tensor([TOKENIZER.sot] + TOKENIZER.encode(text) + [TOKENIZER.eot], device=DEVICE)[None]
+def whisper_nll(mel: torch.Tensor, text: str) -> float:
+    text_tokens_list = list(TOKENIZER.sot_sequence_including_notimestamps)
+    text_tokens_list += TOKENIZER.encode(text)
+    text_tokens_list += [TOKENIZER.eot]
+    print(text_tokens_list,"text_tokens_list")
+    tgt = torch.tensor(text_tokens_list, device=DEVICE)[None]
     enc = WHISPER.encoder(mel)
+    # ignore the first 3 tokens, which are always <|lang_id|>, <|transcibe|>, <|notimestampes|>
+    ignore_prefix_size = 3
     logits = WHISPER.decoder(tgt[:, :-1], enc)
-    return float(cross_entropy(logits.view(-1, logits.size(-1)), tgt[:, 1:].view(-1)))
+    logits = logits[:, ignore_prefix_size:]
+    return float(cross_entropy(logits.view(-1, logits.size(-1)), tgt[:, 1+ignore_prefix_size:].view(-1)))
 
-
+    # ---------------------------------------------------------------------------
+    # FastAPI definitions
+    # ---------------------------------------------------------------------------
+app = FastAPI(title="Whisper NLL server", version="0.1.0")
 @app.post("/score", response_model=ScoreResponse)
 async def score(req: ScoreRequest):
     try:
         wav = tokens_to_wav(req.tokens)
-        nll_val = whisper_nll(wav, req.text)
+        if not REMOVE_WHISPER_ENCODER_INPUT_LENGTH_RESTRICTION:
+            wav = _wa.pad_or_trim(wav.numpy())
+        else:
+            wav = wav.numpy()
+        print(wav.shape,"wav.shape")
+        mel = _wa.log_mel_spectrogram(wav, n_mels=REQ_BINS)
+        mel = torch.as_tensor(mel, device=DEVICE)[None]
+
+        # nll_val = whisper_nll(mel, req.text)
+        nll_val = 1
+        # print(nll_val,"nll_val")
         # greedy transcript (quick)
-        transcript = WHISPER.transcribe(audio=wav.numpy(), fp16=torch.cuda.is_available())["text"].strip()
+        # transcript = WHISPER.transcribe(audio=wav.numpy(), fp16=torch.cuda.is_available())["text"].strip()
+
+        assert mel.ndim == 3,f"mel.ndim: {mel.ndim}"
+        mel = mel.to(DEVICE, dtype=torch.float16)
+        print(mel.shape,"mel.shape")
+
+        options = whisper.DecodingOptions(
+            task="transcribe",
+            language="zh",
+            without_timestamps=True,
+            beam_size=1,
+        )
+        results = WHISPER.decode(mel, options)
+        transcript = [result.text for result in results]
+        transcript = transcript[0]
+
         return ScoreResponse(nll=nll_val, transcript=transcript)
     except Exception as e:
         raise HTTPException(500, detail=str(e))
@@ -216,4 +226,37 @@ async def health():
 
 
 if __name__ == "__main__":
+
+    
+    args = get_args()
+
+    DEVICE = args.device
+    REMOVE_WHISPER_ENCODER_INPUT_LENGTH_RESTRICTION = args.remove_whisper_encoder_input_length_restriction
+
+    print(f"Loading Whisper '{args.model}' on {DEVICE} …")
+    WHISPER = whisper.load_model(args.model, device=DEVICE).eval()
+    if REMOVE_WHISPER_ENCODER_INPUT_LENGTH_RESTRICTION:
+        replace_whisper_encoder_forward()
+
+    REQ_BINS = _get_mel_bins(WHISPER)
+
+    # Load CosyVoice2 once
+    print("Loading CosyVoice2 …")
+    CODEC = CosyVoice2(
+        args.token2wav_path, load_jit=False, load_trt=False, fp16=False
+    )
+
+    # Load prompt speech if provided
+    PROMPT_SPEECH_16K = None
+    if args.prompt_speech_path:
+        try:
+            PROMPT_SPEECH_16K = load_wav(args.prompt_speech_path, 16000)
+            print(f"Loaded prompt speech from {args.prompt_speech_path}")
+        except Exception as e:
+            print(f"Warning: Could not load prompt speech: {e}")
+            PROMPT_SPEECH_16K = None
+
+    # Tokenizer
+    TOKENIZER = whisper.tokenizer.get_tokenizer(multilingual=True, task="transcribe")
+
     uvicorn.run(app, host="0.0.0.0", port=args.port, log_level="info")
