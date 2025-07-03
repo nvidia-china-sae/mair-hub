@@ -36,9 +36,9 @@ The format of the training data manifest is shown below:
 ```
 
 #### Feature extraction
-After preparing the wav data manifest, you can use the `compute_feat.py` script to extract the 80-dim FBANK that is desired input feature of Whisper Large-v3 model.
+After preparing the wav data manifest, you can use the `compute_fbank_aishell.py` script to extract the 80-dim FBANK that is desired input feature of Whisper Large-v3 model.
 ```
-python3 
+python3 compute_fbank_aishell.py --num-mel-bins 128 --whisper-fbank true
 ```
 
 And you will get the generated features in the directory `data/fbank_whisper`. 
