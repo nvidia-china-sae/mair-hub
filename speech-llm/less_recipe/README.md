@@ -6,10 +6,10 @@ This repository includes the recipe of how to finetune the Speech Foundational M
 
 Pipeline is illustrated in the below figure, taking the Spanish-to-English Automatic Speech Translation (ES-to-EN AST) as an example.  We have several steps: 
 
- 1. Finetune the SFM at T=0 with supervised  data
+ 1. First seed model: finetune the SFM at T=0 with supervised data
  2. Prepare the unsupervised data 
  3. Generate the pseudo labels: inference the unsupervised using the initial SFM (SFM 0) to get the pseudo labels
- 4. Perform LLM requests: Refine the pseudo labels with an LLM, and perform data filtering using proper **hypo_wer**
+ 4. Perform LLM requests: Refine the pseudo labels with an LLM, and perform data filtering
  5. New Finetune iteration: combine the supervised data and pseudo-labeled unsupervised data together, and finetune the SFM. Go step 3 and iterate until converge
  
 <p align="center">
@@ -19,10 +19,15 @@ Pipeline is illustrated in the below figure, taking the Spanish-to-English Autom
 ## Steps
 In this section, we will go through each step of LESS in detail. We will use the open-source [Whisper Large-v3](https://huggingface.co/openai/whisper-large-v3) as our Speech Foundation Model in this tutorial. 
 
+### First seed model
+You can refer our Whisper finetuning recipe using AISHELL1 in [K2-Icefall](https://github.com/k2-fsa/icefall/tree/master/egs/aishell/ASR/whisper) for more details or use your own supervised data for finetuning.
+
 ### Prepare the unsupervised data
 
 #### Segment the audio
-You can use your own collected data. As collected data may have long durations, we suggest to use a Voice Activity Detection module to segment the audio into shorter clips. In our paper, we use the open-source [Silera-VAD](https://github.com/snakers4/silero-vad). The input length of Whisper is restricted to 30 seconds, so you can set the maximum length of the VAD to 30 seconds or shorter to avoid non-acceptable inputs and more efficient GPU ussage. 
+You can use your own collected data. Since collected data may have long durations, we recommend segmenting them into shorter clips using a Voice Activity Detection (VAD) module. In our paper, we use the open-source [Silera-VAD](https://github.com/snakers4/silero-vad). 
+
+Note that Whisper accepts input clips up to 30 seconds in length, so you should configure the VAD to produce segments no longer than 30 seconds. This ensures compatibility with Whisper and leads to more efficient GPU usage.
 
 #### Data manifest format
 The format of the training data manifest is shown below:
