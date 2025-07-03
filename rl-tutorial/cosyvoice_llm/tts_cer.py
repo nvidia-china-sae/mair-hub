@@ -33,7 +33,7 @@ HEALTH_URL = f"{SERVER.rstrip('/')}/healthz"
 
 # quick health cache to avoid hitting server each call
 _last_health = 0.0
-zh_tn_model = ZhNormalizer(remove_erhua=False, remove_interjections=False, remove_puncts=True, overwrite_cache=False)
+zh_tn_model = ZhNormalizer(cache_dir='./cache', remove_erhua=False, remove_interjections=False, remove_puncts=True, overwrite_cache=True)
 
 def _check_server():
     global _last_health
@@ -91,8 +91,8 @@ def compute_score(
     # upper to lower
     ground_truth = ground_truth.lower()
     hyp = hyp.lower()
-    print(f"ground_truth: {ground_truth}")
-    print(f"hyp: {hyp}")
+    # print(f"ground_truth: {ground_truth}")
+    # print(f"hyp: {hyp}")
     # get pinyin of ground_truth and hyp
 
     ground_truth_pinyin = lazy_pinyin(
@@ -113,9 +113,9 @@ def compute_score(
     hyp_pinyin_str = ' '.join(hyp_pinyin)
     ground_truth_pinyin_str = ' '.join(ground_truth_pinyin)
     c = float(wer(ground_truth_pinyin_str, hyp_pinyin_str))
-    print(f"ground_truth_pinyin_str: {ground_truth_pinyin_str}")
-    print(f"hyp_pinyin_str: {hyp_pinyin_str}")
-    print(f"c: {c}")
+    # print(f"ground_truth_pinyin_str: {ground_truth_pinyin_str}")
+    # print(f"hyp_pinyin_str: {hyp_pinyin_str}")
+    # print(f"c: {c}")
     # c_lists = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
     # beta_c_lists = [1, 2, 3]
     # for c_list in c_lists:

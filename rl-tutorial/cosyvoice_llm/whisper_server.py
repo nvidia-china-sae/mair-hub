@@ -34,6 +34,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import List
 import sys
+import random
+import numpy as np
 from scipy.signal import resample
 import torch
 import whisper  # type: ignore
@@ -42,6 +44,7 @@ from torch.nn.functional import cross_entropy
 from cosyvoice.cli.cosyvoice import CosyVoice2
 from cosyvoice.utils.file_utils import load_wav
 from whisper_encoder_forward_monkey_patch import replace_whisper_encoder_forward
+from datasets import load_dataset
 
 sys.path.append("/workspace/CosyVoice/third_party/Matcha-TTS")
 
@@ -62,14 +65,20 @@ def get_args():
     parser.add_argument(
         "--prompt-text",
         type=str,
-        default="Romeo and Juliet might be the most famous act of William Shakespeare.",
-        help="The prompt text for CosyVoice"
+        default=None,
+        help="The prompt text for CosyVoice. If not provided, will use random sample from dataset"
     )
     parser.add_argument(
         "--prompt-speech-path",
         type=str,
-        default="./assets/common_voice_en_2586258.wav",
-        help="The path to the prompt speech for CosyVoice"
+        default=None,
+        help="The path to the prompt speech for CosyVoice. If not provided, will use random sample from dataset"
+    )
+    parser.add_argument(
+        "--huggingface-dataset-name",
+        type=str,
+        default="yuekai/aishell",
+        help="Huggingface dataset name to use for random prompt selection"
     )
     parser.add_argument(
         "--remove-whisper-encoder-input-length-restriction",
@@ -125,6 +134,48 @@ def audio_decode_cosyvoice2(
 
     return audio_hat
 
+
+
+
+def get_random_prompt_from_dataset():
+    """
+    Get random prompt text and speech from the pre-loaded dataset.
+    Returns (prompt_text, prompt_speech_16k)
+    """
+    global DATASET, PROMPT_SPEECH_16K, args
+    
+    if DATASET is None:
+        # Fallback to default values if dataset not available
+        default_text = args.prompt_text or "Romeo and Juliet might be the most famous act of William Shakespeare."
+        return default_text, PROMPT_SPEECH_16K
+    
+
+        # Randomly select an index
+    random_idx = random.randint(0, len(DATASET) - 1)
+    sample = DATASET[random_idx]
+    
+    
+    # Extract audio data
+    audio_data = sample["audio"]
+    audio_array = audio_data["array"]
+    sample_rate = audio_data["sampling_rate"]
+    
+    # Convert audio to 16kHz if needed
+    if sample_rate != 16000:
+        num_samples = int(len(audio_array) * (16000 / sample_rate))
+        audio_array = resample(audio_array, num_samples)
+    
+    # Convert to torch tensor
+    prompt_speech_16k = torch.from_numpy(audio_array).float().unsqueeze(0)
+    print(prompt_speech_16k.shape,"prompt_speech_16k.shape")
+    prompt_text = sample["text"]
+    # remove space in prompt_text
+    prompt_text = prompt_text.replace(" ", "")
+    print(f"Selected random sample {random_idx} for prompt: '{prompt_text[:50]}...'")
+    return prompt_text, prompt_speech_16k
+        
+
+
 class ScoreRequest(BaseModel):
     tokens: List[int] = Field(..., description="Speech token ids (<|s_xxx|>)")
     text: str = Field(..., description="Ground‑truth text for NLL")
@@ -136,10 +187,15 @@ class ScoreResponse(BaseModel):
 
 
 @torch.inference_mode()
-def tokens_to_wav(tokens: List[int]) -> torch.Tensor:
+def tokens_to_wav(tokens: List[int], prompt_text: str = None, prompt_speech_16k: torch.Tensor = None) -> torch.Tensor:
     """Convert speech tokens to wav using CosyVoice2"""
-    if PROMPT_SPEECH_16K is None:
-        raise ValueError("Prompt speech not available. Please provide --prompt-speech-path")
+    
+    # Use provided prompts or get random ones from dataset
+    if prompt_text is None or prompt_speech_16k is None:
+        prompt_text, prompt_speech_16k = get_random_prompt_from_dataset()
+    
+    if prompt_speech_16k is None:
+        raise ValueError("Prompt speech not available. Please provide --prompt-speech-path or ensure dataset is loaded")
     
     # Convert tokens to tensor format expected by CosyVoice2
     audio_tokens = torch.tensor(tokens, dtype=torch.long, device=DEVICE).unsqueeze(0)
@@ -147,8 +203,8 @@ def tokens_to_wav(tokens: List[int]) -> torch.Tensor:
     # Use CosyVoice2 to decode tokens to audio
     audio_hat = audio_decode_cosyvoice2(
         audio_tokens,
-        args.prompt_text,
-        PROMPT_SPEECH_16K,
+        prompt_text,
+        prompt_speech_16k,
         CODEC,
     )
     # resample to 16000 using soundfile
@@ -167,22 +223,34 @@ def tokens_to_wav(tokens: List[int]) -> torch.Tensor:
 
 @torch.inference_mode()
 def whisper_nll(mel: torch.Tensor, text: str) -> float:
-    text_tokens_list = list(TOKENIZER.sot_sequence_including_notimestamps)
+    # text_tokens_list = list(TOKENIZER.sot_sequence_including_notimestamps)
+    text_tokens_list = [TOKENIZER.sot]
     text_tokens_list += TOKENIZER.encode(text)
     text_tokens_list += [TOKENIZER.eot]
     print(text_tokens_list,"text_tokens_list")
     tgt = torch.tensor(text_tokens_list, device=DEVICE)[None]
     enc = WHISPER.encoder(mel)
     # ignore the first 3 tokens, which are always <|lang_id|>, <|transcibe|>, <|notimestampes|>
-    ignore_prefix_size = 3
+    # ignore_prefix_size = 3
     logits = WHISPER.decoder(tgt[:, :-1], enc)
-    logits = logits[:, ignore_prefix_size:]
-    return float(cross_entropy(logits.view(-1, logits.size(-1)), tgt[:, 1+ignore_prefix_size:].view(-1)))
+    # logits = logits[:, ignore_prefix_size:]
+    return float(cross_entropy(logits.view(-1, logits.size(-1)), tgt[:, 1:].view(-1)))
 
     # ---------------------------------------------------------------------------
     # FastAPI definitions
     # ---------------------------------------------------------------------------
 app = FastAPI(title="Whisper NLL server", version="0.1.0")
+
+# @app.post("/score", response_model=ScoreResponse)
+# async def score(req: ScoreRequest):
+#     global COUNTER
+#     try:
+#         print("Score endpoint called")
+#         COUNTER += 1
+#         print(f"COUNTER: {COUNTER}")
+#         return ScoreResponse(nll=1, transcript="1245")
+#     except Exception as e:
+#         raise HTTPException(500, detail=str(e))
 @app.post("/score", response_model=ScoreResponse)
 async def score(req: ScoreRequest):
     try:
@@ -226,9 +294,11 @@ async def health():
 
 
 if __name__ == "__main__":
-
-    
+    global args, COUNTER
     args = get_args()
+
+    # Initialize the counter
+    COUNTER = 0
 
     DEVICE = args.device
     REMOVE_WHISPER_ENCODER_INPUT_LENGTH_RESTRICTION = args.remove_whisper_encoder_input_length_restriction
@@ -246,14 +316,25 @@ if __name__ == "__main__":
         args.token2wav_path, load_jit=False, load_trt=False, fp16=False
     )
 
-    # Load prompt speech if provided
+    # Load dataset once at startup for random prompt selection
+    DATASET = None
+    if args.huggingface_dataset_name:
+        try:
+            print(f"Loading dataset '{args.huggingface_dataset_name}' for prompt selection...")
+            DATASET = load_dataset(args.huggingface_dataset_name, "test", trust_remote_code=True)["test"]
+            print(f"Dataset loaded successfully with {len(DATASET)} samples")
+        except Exception as e:
+            print(f"Warning: Could not load dataset {args.huggingface_dataset_name}: {e}")
+            DATASET = None
+
+    # Load default prompt speech if provided
     PROMPT_SPEECH_16K = None
     if args.prompt_speech_path:
         try:
             PROMPT_SPEECH_16K = load_wav(args.prompt_speech_path, 16000)
-            print(f"Loaded prompt speech from {args.prompt_speech_path}")
+            print(f"Loaded default prompt speech from {args.prompt_speech_path}")
         except Exception as e:
-            print(f"Warning: Could not load prompt speech: {e}")
+            print(f"Warning: Could not load default prompt speech: {e}")
             PROMPT_SPEECH_16K = None
 
     # Tokenizer
