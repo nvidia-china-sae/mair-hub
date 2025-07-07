@@ -19,39 +19,67 @@ from typing import List
 
 import numpy as np
 import requests
-import torch
-from jiwer import cer, wer
+from jiwer import wer
 from pypinyin import lazy_pinyin, Style
 from tn.chinese.normalizer import Normalizer as ZhNormalizer
 
 def _parse_ids(token_str: str) -> List[int]:
     return [int(t) for t in re.findall(r"<\|s_(\d+)\|>", token_str)]
 
-SERVER = os.getenv("WHISPER_SERVER", "http://localhost:8001")
-SCORE_URL = f"{SERVER.rstrip('/')}/score"
-HEALTH_URL = f"{SERVER.rstrip('/')}/healthz"
+ASR_SERVER = os.getenv("ASR_SERVER", "http://localhost:8000")
+ASR_MODEL = os.getenv("ASR_MODEL", "token2wav_asr")
 
-# quick health cache to avoid hitting server each call
-_last_health = 0.0
-zh_tn_model = ZhNormalizer(cache_dir='./cache', remove_erhua=False, remove_interjections=False, remove_puncts=True, overwrite_cache=True)
+# Pre-built URL for Triton HTTP inference
+ASR_URL = f"{ASR_SERVER.rstrip('/')}/v2/models/{ASR_MODEL}/infer"
 
-def _check_server():
-    global _last_health
-    if time.time() - _last_health < 30:
-        return
+# Chinese text normalizer (cache on first use)
+zh_tn_model = ZhNormalizer(
+    cache_dir="./cache",
+    remove_erhua=False,
+    remove_interjections=False,
+    remove_puncts=True,
+    overwrite_cache=True,
+)
+
+
+def _remote_asr(tokens: List[int], timeout: float = 200.0) -> str:
+    """Send token IDs to the Triton ASR server and return the transcript."""
+
+    tokens_arr = np.array(tokens, dtype=np.int32).reshape(1, -1)
+    lens_arr = np.array([[tokens_arr.shape[1]]], dtype=np.int32)
+
+    payload = {
+        "inputs": [
+            {
+                "name": "TOKENS",
+                "shape": list(tokens_arr.shape),
+                "datatype": "INT32",
+                "data": tokens_arr.tolist(),
+            },
+            {
+                "name": "TOKEN_LENS",
+                "shape": list(lens_arr.shape),
+                "datatype": "INT32",
+                "data": lens_arr.tolist(),
+            },
+        ]
+    }
+
+    rsp = requests.post(
+        ASR_URL,
+        headers={"Content-Type": "application/json"},
+        json=payload,
+        timeout=timeout,
+        verify=False,
+        params={"request_id": "0"},
+    )
+    rsp.raise_for_status()
+    result = rsp.json()
+
     try:
-        requests.get(HEALTH_URL, timeout=2)
-        _last_health = time.time()
-    except Exception as e:
-        raise RuntimeError(f"Whisper server not reachable at {SERVER}: {e}")
-
-
-def _remote_whisper(tokens: List[int], text: str):
-    _check_server()
-    payload = {"tokens": tokens, "text": text}
-    r = requests.post(SCORE_URL, json=payload, timeout=20)
-    r.raise_for_status()
-    return r.json()  # {nll, transcript}
+        return result["outputs"][0]["data"][0]
+    except (KeyError, IndexError, TypeError):
+        return ""
 
 
 def compute_score(
@@ -61,80 +89,58 @@ def compute_score(
     extra_info: dict | None = None,
     *,
     beta_c: float = 3.0,
-    tau_n: float = 3.0,
-    lambda_c: float = 0.6,
-    lambda_n: float = 0.4,
+    tau_n: float = 3.0,      # kept for backward-compat; ignored
+    lambda_c: float = 0.6,   # kept for backward-compat; ignored
+    lambda_n: float = 0.4,   # kept for backward-compat; ignored
     debug_dump: bool = False,
 ) -> float:
-    """Return reward in [0,1] using remote Whisper."""
+    """Return reward in [0, 1] using the Triton ASR service.
 
+    The reward is based on the pinyin-level WER between the ASR transcript
+    produced from *solution_str* and the provided *ground_truth* text.
+    """
+
+    # Decode token IDs
     ids = _parse_ids(solution_str)
 
+    # Transcribe with remote ASR
     try:
-        resp = _remote_whisper(ids, ground_truth)
-        nll = float(resp["nll"])
-        transcript = resp.get("transcript", "")
-        nll = None
+        transcript = _remote_asr(ids)
     except Exception as e:
-        warnings.warn(f"Whisper server error: {e}; CER-only fallback")
-        nll = None
+        warnings.warn(f"ASR server error: {e}; using empty transcript fallback")
         transcript = ""
 
-    # CER utility
-    # hyp = transcript if transcript else ground_truth  # in worst case CER=0
-    hyp = transcript
-    ground_truth = zh_tn_model.normalize(ground_truth)
-    hyp = zh_tn_model.normalize(hyp)
-    # remove space
-    # ground_truth = ground_truth.replace(" ", "")
-    # hyp = hyp.replace(" ", "")
-    # upper to lower
-    ground_truth = ground_truth.lower()
-    hyp = hyp.lower()
-    # print(f"ground_truth: {ground_truth}")
-    # print(f"hyp: {hyp}")
-    # get pinyin of ground_truth and hyp
+    # Normalization / lower-casing
+    gt_norm = zh_tn_model.normalize(ground_truth).lower()
+    hyp_norm = zh_tn_model.normalize(transcript).lower()
 
-    ground_truth_pinyin = lazy_pinyin(
-        ground_truth,
+    # Convert to tone-number pinyin
+    gt_pinyin = lazy_pinyin(
+        gt_norm,
         style=Style.TONE3,
         tone_sandhi=True,
         neutral_tone_with_five=True,
     )
     hyp_pinyin = lazy_pinyin(
-        hyp,
+        hyp_norm,
         style=Style.TONE3,
         tone_sandhi=True,
         neutral_tone_with_five=True,
     )
-    # c = float(cer(ground_truth, hyp))
 
-    # compute per
-    hyp_pinyin_str = ' '.join(hyp_pinyin)
-    ground_truth_pinyin_str = ' '.join(ground_truth_pinyin)
-    c = float(wer(ground_truth_pinyin_str, hyp_pinyin_str))
-    # print(f"ground_truth_pinyin_str: {ground_truth_pinyin_str}")
-    # print(f"hyp_pinyin_str: {hyp_pinyin_str}")
-    # print(f"c: {c}")
-    # c_lists = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-    # beta_c_lists = [1, 2, 3]
-    # for c_list in c_lists:
-    #     for beta_c_list in beta_c_lists:
-    #         print(f"c: {c_list}, beta_c: {beta_c_list}, reward: {1.0 - np.tanh(beta_c_list * c_list)}")
-    cer_u = 1.0 - np.tanh(beta_c * c)
+    # Compute WER on pinyin strings
+    c = float(wer(" ".join(gt_pinyin), " ".join(hyp_pinyin)))
 
-    # NLL utility
-    if nll is not None:
-        nll_u = float(np.exp(-nll / tau_n))
-    else:
-        nll_u = 1e-9
+    # Shaped reward (0 → bad, 1 → perfect)
+    reward = 1.0 - np.tanh(beta_c * c)
+    reward = max(0.0, min(1.0, reward))
 
-    #denom = lambda_c / cer_u + lambda_n / nll_u
-    #reward = (lambda_c + lambda_n) / denom if denom > 0 else 0.0
-    reward = cer_u
+    if debug_dump:
+        print(
+            f"\033[92m[{data_source}] WER: {c:.3f}, Reward: {reward:.4f}, Transcript: {transcript}\033[0m"
+        )
 
-    # print(f"\033[92mCER: {c:.3f}, NLL: {nll}, transcript: {transcript}, Reward: {reward:.4f}\033[0m")
-    return max(0.0, min(1.0, reward))
+    return reward
 
 # CLI quick test
 if __name__ == "__main__":

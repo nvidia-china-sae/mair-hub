@@ -49,8 +49,15 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 from torch.utils.data import DataLoader, Dataset, DistributedSampler
 from tqdm import tqdm
 import soundfile as sf
+import s3tokenizer
+from functools import partial
 
 sys.path.append("/workspace/CosyVoice/third_party/Matcha-TTS")
+try:
+    torch.multiprocessing.set_start_method("spawn")
+except RuntimeError:
+    pass
+
 
 TEMPLATE = "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\n' + message['content']}}{% if loop.last %}{{ '<|im_end|>'}}{% else %}{{ '<|im_end|>\n' }}{% endif %}{% endfor %}"
 
@@ -118,8 +125,7 @@ def get_args():
         "--split-name",
         type=str,
         default="wenetspeech4tts",
-        choices=["wenetspeech4tts", "test_zh", "test_en", "test_hard"],
-        help="huggingface dataset split name",
+        help="huggingface dataset split name, see yuekai/CV3-Eval, yuekai/seed_tts_cosy2",
     )
     parser.add_argument(
         "--output-dir", required=True, type=str, help="dir to save result"
@@ -183,11 +189,12 @@ def get_args():
 
 
 
-def data_collator(batch, tokenizer):
+def data_collator(batch, tokenizer, s3_tokenizer):
     """Simplified data collator for batch_size=1 processing"""
     target_sample_rate = 16000  # CosyVoice2 uses 16kHz for prompt audio
+    device = s3_tokenizer.device
     input_ids_list, prompt_audio_list, prompt_text_list = [], [], []
-    
+    mels, prompt_audio_cosy2tokens_list = [], []
     for i, item in enumerate(batch):
         prompt_text, target_text = (
             item["prompt_text"],
@@ -196,26 +203,6 @@ def data_collator(batch, tokenizer):
         prompt_text_list.append(prompt_text)
         # Combine prompt and target text
         full_text = prompt_text + target_text
-        
-        prompt_audio_cosy2tokens = item["prompt_audio_cosy2_tokens"]
-        #prompt_audio_cosy2tokens = [c + 151665 for c in prompt_audio_cosy2tokens]
-        prompt_audio_cosy2_id_str = convert_cosy2_tokens_to_speech_id_str(prompt_audio_cosy2tokens)
-
-
-        # Create chat template for LLM generation
-        chat = [
-            {"role": "user", "content": f"Convert the text to speech: {full_text}"},
-            # {"role": "assistant", "content": "<|SPEECH_GENERATION_START|>"}
-            {"role": "assistant", "content": f"<|SPEECH_GENERATION_START|>{prompt_audio_cosy2_id_str}"}
-        ]
-
-        input_ids = tokenizer.apply_chat_template(
-            chat,
-            tokenize=True,
-            return_tensors='pt',
-            continue_final_message=True
-        )
-        input_ids_list.append(input_ids.squeeze(0))
 
         # get prompt audio for CosyVoice2 (convert to 16kHz)
         ref_audio_org, ref_sr = (
@@ -233,6 +220,36 @@ def data_collator(batch, tokenizer):
             ref_audio = ref_audio_org
 
         prompt_audio_list.append(ref_audio)
+
+        if "prompt_audio_cosy2_tokens" in item:
+            prompt_audio_cosy2tokens = item["prompt_audio_cosy2_tokens"]
+            prompt_audio_cosy2tokens_list.append(prompt_audio_cosy2tokens)
+        else:
+            # convert to float first
+            mels.append(s3tokenizer.log_mel_spectrogram(ref_audio.squeeze(0)))
+
+    if len(mels) > 0:
+        mels, mels_lens = s3tokenizer.padding(mels)
+        codes, codes_lens = s3_tokenizer.quantize(mels.to(device), mels_lens.to(device))
+        for i in range(len(codes)):
+            prompt_audio_cosy2tokens_list.append(codes[i, :codes_lens[i].item()])
+    for i, prompt_audio_cosy2tokens in enumerate(prompt_audio_cosy2tokens_list):
+        prompt_audio_cosy2_id_str = convert_cosy2_tokens_to_speech_id_str(prompt_audio_cosy2tokens)
+        # Create chat template for LLM generation
+        chat = [
+            {"role": "user", "content": f"Convert the text to speech: {full_text}"},
+            # {"role": "assistant", "content": "<|SPEECH_GENERATION_START|>"}
+            {"role": "assistant", "content": f"<|SPEECH_GENERATION_START|>{prompt_audio_cosy2_id_str}"}
+        ]
+
+        input_ids = tokenizer.apply_chat_template(
+            chat,
+            tokenize=True,
+            return_tensors='pt',
+            continue_final_message=True
+        )
+        input_ids_list.append(input_ids.squeeze(0))
+
 
     # For batch_size=1, no need to pad
     if len(input_ids_list) == 1:
@@ -284,17 +301,20 @@ def main():
     model.to(device)
 
     # Load CosyVoice2 for token2wav conversion
+    # cosyvoice_codec = CosyVoice2(
+    #     args.token2wav_path, load_jit=False, load_trt=False, fp16=False
+    # )
     cosyvoice_codec = CosyVoice2(
-        args.token2wav_path, load_jit=False, load_trt=False, fp16=False
+        args.token2wav_path, load_jit=True, load_trt=True, fp16=True
     )
-
     if args.prompt_speech_path:
         prompt_speech_16k = load_wav(args.prompt_speech_path, 16000)
     else:
         prompt_speech_16k = None
-
+    s3_tokenizer = s3tokenizer.load_model("speech_tokenizer_v2_25hz").to(device) if 'zero' in args.split_name else None
+    dataset_name = "yuekai/CV3-Eval" if 'zero' in args.split_name else "yuekai/seed_tts_cosy2"
     dataset = load_dataset(
-        "yuekai/seed_tts_cosy2",
+        dataset_name,
         split=args.split_name,
         trust_remote_code=True,
     )
@@ -308,7 +328,7 @@ def main():
         shuffle=False,
         num_workers=args.num_workers,
         prefetch_factor=args.prefetch,
-        collate_fn=lambda x: data_collator(x, tokenizer),
+        collate_fn=partial(data_collator, tokenizer=tokenizer, s3_tokenizer=s3_tokenizer),
     )
 
     total_steps = len(dataset)
@@ -365,16 +385,11 @@ def main():
                     
                     # Convert to numpy and save
                     generated_wave = audio_hat.squeeze(0).cpu().numpy()
-                    print(generated_wave.shape,"generated_wave.shape")
                     target_sample_rate = 24000
                     
                     utt = batch["ids"][i]
                     sf.write(f"{args.output_dir}/{utt}.wav", generated_wave, target_sample_rate)
-                    # torchaudio.save(
-                    #     f"{args.output_dir}/{utt}.wav",
-                    #     generated_wave,
-                    #     target_sample_rate,
-                    # )
+
                     print(f"Generated audio for sample {utt} with {len(speech_ids)} tokens")
                 else:
                     print(f"Warning: No prompt audio available for sample {batch['ids'][i]}, skipping")
