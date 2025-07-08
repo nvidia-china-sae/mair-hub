@@ -192,7 +192,7 @@ def get_args():
 def data_collator(batch, tokenizer, s3_tokenizer):
     """Simplified data collator for batch_size=1 processing"""
     target_sample_rate = 16000  # CosyVoice2 uses 16kHz for prompt audio
-    device = s3_tokenizer.device
+    device = s3_tokenizer.device if s3_tokenizer is not None else torch.device("cpu")
     input_ids_list, prompt_audio_list, prompt_text_list = [], [], []
     mels, prompt_audio_cosy2tokens_list = [], []
     for i, item in enumerate(batch):
