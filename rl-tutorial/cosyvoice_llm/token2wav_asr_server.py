@@ -12,17 +12,30 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Simple classifier example based on Hugging Face Pytorch ResNet model."""
+"""Pytriton server for token2wav conversion and ASR"""
 
 import argparse
 import io
 import logging
 from typing import Any, List
 import numpy as np
-import torch  # pytype: disable=import-error
+import torch
 from scipy.signal import resample
 import sys
 import random
+import re
+from jiwer import wer
+from pypinyin import lazy_pinyin, Style
+from tn.chinese.normalizer import Normalizer as ZhNormalizer
+
+# Chinese text normalizer (cached globally)
+zh_tn_model = ZhNormalizer(
+    cache_dir="./cache",
+    remove_erhua=False,
+    remove_interjections=False,
+    remove_puncts=True,
+    overwrite_cache=True,
+)
 
 from pytriton.decorators import batch
 from pytriton.model_config import DynamicBatcher, ModelConfig, Tensor
@@ -36,10 +49,10 @@ from datasets import load_dataset
 
 sys.path.append("/workspace/CosyVoice/third_party/Matcha-TTS")
 
-logger = logging.getLogger("examples.multi_instance_sensevoice_pytorch.server")
+logger = logging.getLogger("token2wav_asr_server")
 
 
-class _InferFuncWrapper:
+class _ASR_Server:
     """Wraps a single OmniSenseVoiceSmall model instance for Triton."""
 
     def __init__(self, device_id: int):
@@ -151,7 +164,7 @@ class _Token2Wav_ASR:
                 "/workspace/CosyVoice2-0.5B", load_jit=True, load_trt=True, fp16=True
             )
     @batch
-    def __call__(self, TOKENS: np.ndarray, TOKEN_LENS: np.ndarray):
+    def __call__(self, TOKENS: np.ndarray, TOKEN_LENS: np.ndarray, GT_TEXT: np.ndarray):
         """
         WAV: np.ndarray, WAV_LENS: np.ndarray
         LANGUAGE: np.ndarray, TEXTNORM: np.ndarray for backward compatibility, not used
@@ -164,6 +177,13 @@ class _Token2Wav_ASR:
             print(f"device_id: {self.device_id}, TOKENS: {TOKENS.shape}, TOKEN_LENS: {TOKEN_LENS.shape}")
 
         tokens_list = [TOKENS[i, :TOKEN_LENS[i, 0]] for i in range(len(TOKENS))]
+
+        # Decode ground-truth text strings (BYTES → str)
+        if GT_TEXT.ndim == 2:
+            gt_texts = [GT_TEXT[i, 0].decode("utf-8") for i in range(len(GT_TEXT))]
+        else:
+            gt_texts = [GT_TEXT[i].decode("utf-8") for i in range(len(GT_TEXT))]
+
         wavs = []
         for tokens in tokens_list:
             prompt_text, prompt_speech_16k = get_random_prompt_from_dataset(self.dataset)
@@ -187,16 +207,45 @@ class _Token2Wav_ASR:
             textnorm="woitn",
         )
         texts = [result.text for result in results]
+
+        # ---------------- Reward computation ----------------
+        rewards = []
+        for gt_text, hyp_text in zip(gt_texts, texts):
+            gt_norm = zh_tn_model.normalize(gt_text).lower()
+            hyp_norm = zh_tn_model.normalize(hyp_text).lower()
+
+            gt_pinyin = lazy_pinyin(
+                gt_norm,
+                style=Style.TONE3,
+                tone_sandhi=True,
+                neutral_tone_with_five=True,
+            )
+            hyp_pinyin = lazy_pinyin(
+                hyp_norm,
+                style=Style.TONE3,
+                tone_sandhi=True,
+                neutral_tone_with_five=True,
+            )
+
+            c = float(wer(" ".join(gt_pinyin), " ".join(hyp_pinyin)))
+            reward_val = 1.0 - np.tanh(3.0 * c)
+            reward_val = max(0.0, min(1.0, reward_val))
+            rewards.append(reward_val)
+
         transcripts = np.char.encode(np.array(texts).reshape(-1, 1), "utf-8")
-        return {"TRANSCRIPTS": transcripts}
+        rewards_arr = np.array(rewards, dtype=np.float32).reshape(-1, 1)
+
+        return {"REWARDS": rewards_arr, "TRANSCRIPTS": transcripts}
 
 
-def _infer_function_factory(device_ids: List[int]):
+def _infer_function_factory(device_ids: List[int], model_name: str):
     """Creates a list of inference functions, one for each requested device ID."""
     infer_funcs = []
     for device_id in device_ids:
-        # infer_funcs.append(_InferFuncWrapper(device_id=device_id))
-        infer_funcs.append(_Token2Wav_ASR(device_id=device_id))
+        if model_name == "sensevoice":
+            infer_funcs.append(_ASR_Server(device_id=device_id))
+        else:
+            infer_funcs.append(_Token2Wav_ASR(device_id=device_id))
     return infer_funcs
 
 
@@ -215,11 +264,24 @@ def main():
         default=False,
     )
     parser.add_argument(
-        "--number-of-instances",
+        "--number-of-instances-per-device",
         type=int,
         default=1,
         help="Number of model instances to load.",
         required=False,
+    )
+    parser.add_argument(
+        "--number-of-devices",
+        type=int,
+        default=8,
+        help="Number of devices to use.",
+    )
+    parser.add_argument(
+        "--model-name",
+        type=str,
+        default="token2wav_asr",
+        choices=["token2wav_asr", "sensevoice"],
+        help="Model name.",
     )
 
     args = parser.parse_args()
@@ -233,45 +295,49 @@ def main():
         metrics_port=8002,
     )
 
-    device_ids = [0, 1, 2, 3, 4, 5, 6, 7] # [0] * args.number_of_instances
-    # device_ids = [0] * args.number_of_instances
+    device_ids = [i for i in range(args.number_of_devices)]
+    device_ids = device_ids * args.number_of_instances_per_device
 
     with Triton(config=triton_config) as triton:
         logger.info("Loading SenseVoice model on device ids: %s", device_ids)
-        # triton.bind(
-        #     model_name="sensevoice",
-        #     infer_func=_infer_function_factory(device_ids),
-        #     inputs=[
-        #         Tensor(name="WAV", dtype=np.float32, shape=(-1,)),
-        #         Tensor(name="WAV_LENS", dtype=np.int32, shape=(-1,)),
-        #         Tensor(name="LANGUAGE", dtype=np.int32, shape=(-1,)),
-        #         Tensor(name="TEXT_NORM", dtype=np.int32, shape=(-1,)),
-        #     ],
-        #     outputs=[
-        #         Tensor(name="TRANSCRIPTS", dtype=bytes, shape=(-1,)),
-        #     ],
-        #     config=ModelConfig(
-        #         max_batch_size=args.max_batch_size,
-        #         batcher=DynamicBatcher(max_queue_delay_microseconds=10000),  # 10ms
-        #     ),
-        #     strict=True,
-        # )
-        triton.bind(
-            model_name="token2wav_asr",
-            infer_func=_infer_function_factory(device_ids),
-            inputs=[
-                Tensor(name="TOKENS", dtype=np.int32, shape=(-1,)),
-                Tensor(name="TOKEN_LENS", dtype=np.int32, shape=(-1,)),
-            ],
-            outputs=[
-                Tensor(name="TRANSCRIPTS", dtype=bytes, shape=(-1,)),
-            ],
-            config=ModelConfig(
-                max_batch_size=args.max_batch_size,
-                batcher=DynamicBatcher(max_queue_delay_microseconds=10000),  # 10ms
-            ),
-            strict=True,
-        )
+        if args.model_name == "sensevoice":
+            triton.bind(
+                model_name="sensevoice",
+                infer_func=_infer_function_factory(device_ids, args.model_name),
+                inputs=[
+                    Tensor(name="WAV", dtype=np.float32, shape=(-1,)),
+                    Tensor(name="WAV_LENS", dtype=np.int32, shape=(-1,)),
+                    Tensor(name="LANGUAGE", dtype=np.int32, shape=(-1,)),
+                    Tensor(name="TEXT_NORM", dtype=np.int32, shape=(-1,)),
+                ],
+                outputs=[
+                    Tensor(name="TRANSCRIPTS", dtype=bytes, shape=(-1,)),
+                ],
+                config=ModelConfig(
+                    max_batch_size=args.max_batch_size,
+                    batcher=DynamicBatcher(max_queue_delay_microseconds=10000),  # 10ms
+                ),
+                strict=True,
+            )
+        else:
+            triton.bind(
+                model_name="token2wav_asr",
+                infer_func=_infer_function_factory(device_ids, args.model_name),
+                inputs=[
+                    Tensor(name="TOKENS", dtype=np.int32, shape=(-1,)),
+                    Tensor(name="TOKEN_LENS", dtype=np.int32, shape=(-1,)),
+                    Tensor(name="GT_TEXT", dtype=bytes, shape=(-1,)),
+                ],
+                outputs=[
+                    Tensor(name="REWARDS", dtype=np.float32, shape=(-1,)),
+                    Tensor(name="TRANSCRIPTS", dtype=bytes, shape=(-1,)),
+                ],
+                config=ModelConfig(
+                    max_batch_size=args.max_batch_size,
+                    batcher=DynamicBatcher(max_queue_delay_microseconds=10000),  # 10ms
+                ),
+                strict=True,
+            )
         logger.info("Serving inference")
         triton.serve()
 

@@ -14,22 +14,17 @@
 # limitations under the License.
 # Modified from https://github.com/xingchensong/S3Tokenizer/blob/main/s3tokenizer/cli.py
 """ Example Usage
-split=test_zh
-llm_path=f5-tts/exp_zh/checkpoint-805000
-token2wav_path=/path/to/cosyvoice2/model
-prompt_speech_path=./assets/common_voice_en_2586258.wav
-output_dir=./output
+dataset=zero_shot_zh
+output_dir=./outputs_rl_aishell3_step${step}_${dataset}_jit_trt_fp16_reward_tts
 
-torchrun --nproc_per_node=2 \
-    infer_dist.py \
-                --output-dir $output_dir \
-                --batch-size 1 \
-                --num-workers 2 \
-                --llm-model-name-or-path $llm_path \
-                --token2wav-path $token2wav_path \
-                --prompt-speech-path $prompt_speech_path \
-                --split-name $split \
-                --top-p 0.95 --temperature 0.8
+token2wav_path=/workspace/CosyVoice2-0.5B
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
+torchrun --nproc_per_node=8 \
+    infer_dataset.py \
+    --output-dir $output_dir \
+    --llm-model-name-or-path $llm_path/merged_hf_model \
+    --token2wav-path $token2wav_path \
+    --split-name ${dataset} || exit 1
 """
 
 import argparse
@@ -300,10 +295,6 @@ def main():
     model.eval()
     model.to(device)
 
-    # Load CosyVoice2 for token2wav conversion
-    # cosyvoice_codec = CosyVoice2(
-    #     args.token2wav_path, load_jit=False, load_trt=False, fp16=False
-    # )
     cosyvoice_codec = CosyVoice2(
         args.token2wav_path, load_jit=True, load_trt=True, fp16=True
     )

@@ -2,14 +2,8 @@
 # Uses external REST server (`whisper_server.py`) running on GPU 3
 # Copyright 2024 Bytedance Ltd.
 # Licensed under the Apache 2.0 License.
-"""Shaped reward for LLaSA-TTS.
-
-Changes
--------
-* Whisper inference is **off-loaded** to a dedicated server (default
-  `http://localhost:8000`).  No GPU usage inside the RL workers.
-* Worker sends only **speech token IDs + text** → minimal network payload.
-* Response: `{ nll, transcript }` – we reuse both for reward.
+"""
+Reward calculation for CosyVoice2-0.5B.
 """
 
 from __future__ import annotations
@@ -19,34 +13,21 @@ from typing import List
 
 import numpy as np
 import requests
-from jiwer import wer
-from pypinyin import lazy_pinyin, Style
-from tn.chinese.normalizer import Normalizer as ZhNormalizer
+
+
+REWARD_SERVER_URL = "http://localhost:8000/v2/models/token2wav_asr/infer"
+
 
 def _parse_ids(token_str: str) -> List[int]:
     return [int(t) for t in re.findall(r"<\|s_(\d+)\|>", token_str)]
 
-ASR_SERVER = os.getenv("ASR_SERVER", "http://localhost:8000")
-ASR_MODEL = os.getenv("ASR_MODEL", "token2wav_asr")
-
-# Pre-built URL for Triton HTTP inference
-ASR_URL = f"{ASR_SERVER.rstrip('/')}/v2/models/{ASR_MODEL}/infer"
-
-# Chinese text normalizer (cache on first use)
-zh_tn_model = ZhNormalizer(
-    cache_dir="./cache",
-    remove_erhua=False,
-    remove_interjections=False,
-    remove_puncts=True,
-    overwrite_cache=True,
-)
-
-
-def _remote_asr(tokens: List[int], timeout: float = 200.0) -> str:
-    """Send token IDs to the Triton ASR server and return the transcript."""
+def _remote_reward(tokens: List[int], ground_truth: str, timeout: float = 200.0) -> float:
+    """Send token IDs and ground-truth text to the Triton server and get reward."""
 
     tokens_arr = np.array(tokens, dtype=np.int32).reshape(1, -1)
     lens_arr = np.array([[tokens_arr.shape[1]]], dtype=np.int32)
+
+    gt_arr = np.array([ground_truth.encode("utf-8")], dtype=object)
 
     payload = {
         "inputs": [
@@ -62,11 +43,16 @@ def _remote_asr(tokens: List[int], timeout: float = 200.0) -> str:
                 "datatype": "INT32",
                 "data": lens_arr.tolist(),
             },
+            {
+                "name": "GT_TEXT",
+                "shape": [1, 1],
+                "datatype": "BYTES",
+                "data": [ground_truth],
+            },
         ]
     }
-
     rsp = requests.post(
-        ASR_URL,
+        REWARD_SERVER_URL,
         headers={"Content-Type": "application/json"},
         json=payload,
         timeout=timeout,
@@ -77,9 +63,10 @@ def _remote_asr(tokens: List[int], timeout: float = 200.0) -> str:
     result = rsp.json()
 
     try:
-        return result["outputs"][0]["data"][0]
+        # Reward is returned as the first output
+        return float(result["outputs"][0]["data"][0])
     except (KeyError, IndexError, TypeError):
-        return ""
+        return 0.0
 
 
 def compute_score(
@@ -88,10 +75,6 @@ def compute_score(
     ground_truth: str,
     extra_info: dict | None = None,
     *,
-    beta_c: float = 3.0,
-    tau_n: float = 3.0,      # kept for backward-compat; ignored
-    lambda_c: float = 0.6,   # kept for backward-compat; ignored
-    lambda_n: float = 0.4,   # kept for backward-compat; ignored
     debug_dump: bool = False,
 ) -> float:
     """Return reward in [0, 1] using the Triton ASR service.
@@ -103,41 +86,16 @@ def compute_score(
     # Decode token IDs
     ids = _parse_ids(solution_str)
 
-    # Transcribe with remote ASR
+    # Query remote server for reward
     try:
-        transcript = _remote_asr(ids)
+        reward = _remote_reward(ids, ground_truth)
     except Exception as e:
-        warnings.warn(f"ASR server error: {e}; using empty transcript fallback")
-        transcript = ""
-
-    # Normalization / lower-casing
-    gt_norm = zh_tn_model.normalize(ground_truth).lower()
-    hyp_norm = zh_tn_model.normalize(transcript).lower()
-
-    # Convert to tone-number pinyin
-    gt_pinyin = lazy_pinyin(
-        gt_norm,
-        style=Style.TONE3,
-        tone_sandhi=True,
-        neutral_tone_with_five=True,
-    )
-    hyp_pinyin = lazy_pinyin(
-        hyp_norm,
-        style=Style.TONE3,
-        tone_sandhi=True,
-        neutral_tone_with_five=True,
-    )
-
-    # Compute WER on pinyin strings
-    c = float(wer(" ".join(gt_pinyin), " ".join(hyp_pinyin)))
-
-    # Shaped reward (0 → bad, 1 → perfect)
-    reward = 1.0 - np.tanh(beta_c * c)
-    reward = max(0.0, min(1.0, reward))
+        warnings.warn(f"Remote reward server error: {e}; returning 0.0")
+        reward = 0.0
 
     if debug_dump:
         print(
-            f"\033[92m[{data_source}] WER: {c:.3f}, Reward: {reward:.4f}, Transcript: {transcript}\033[0m"
+            f"\033[92m[{data_source}] Remote reward: {reward:.4f}\033[0m"
         )
 
     return reward
@@ -156,7 +114,7 @@ if __name__ == "__main__":
         parser.add_argument(
             "--input", "-i",
             type=str,
-            default="slam/mair-hub/rl-tutorial/cosyvoice_llm/data/emilia_zh-cosy-tiny-test.jsonl",
+            default="data/emilia_zh-cosy-tiny-test.jsonl",
             help="Path to input JSONL file"
         )
         
@@ -173,33 +131,6 @@ if __name__ == "__main__":
             help="Run in non-interactive mode (process all samples without prompts)"
         )
         
-        parser.add_argument(
-            "--beta-c",
-            type=float,
-            default=3.0,
-            help="Beta parameter for CER utility calculation"
-        )
-        
-        parser.add_argument(
-            "--tau-n",
-            type=float,
-            default=3.0,
-            help="Tau parameter for NLL utility calculation"
-        )
-        
-        parser.add_argument(
-            "--lambda-c",
-            type=float,
-            default=0.6,
-            help="Lambda parameter for CER weight"
-        )
-        
-        parser.add_argument(
-            "--lambda-n",
-            type=float,
-            default=0.4,
-            help="Lambda parameter for NLL weight"
-        )
         
         parser.add_argument(
             "--debug",
@@ -262,10 +193,6 @@ if __name__ == "__main__":
                     solution_str=solution_str,
                     ground_truth=ground_truth,
                     extra_info=None,
-                    beta_c=args.beta_c,
-                    tau_n=args.tau_n,
-                    lambda_c=args.lambda_c,
-                    lambda_n=args.lambda_n,
                     debug_dump=args.debug
                 )
                 print(f"Final Score: {score:.4f}")

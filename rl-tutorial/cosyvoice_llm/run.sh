@@ -38,12 +38,15 @@ fi
 
 if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
   log "stage 1: start token2wav asr server for reward function"
-  python3 token2wav_asr_server.py
+  python3 token2wav_asr_server.py --number-of-devices 8
 
   # log "Test the reward server"
   # python3 reward_tts.py \
   #   --input data/emilia_zh-cosy-tiny-test.jsonl \
   #   --no-interactive --debug
+
+  # async test the reward server
+  # python3 token2wav_asr_client.py
 fi 
 
 if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
@@ -84,7 +87,7 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
       reward_model.reward_manager=prime \
       custom_reward_function.path=reward_tts.py \
       custom_reward_function.name=compute_score \
-      trainer.project_name='tts_grpo' \
+      trainer.project_name='llasa_tts_grpo' \
       trainer.experiment_name='aishell3_reward_tts_prime' \
       trainer.logger=['console','wandb'] \
       trainer.n_gpus_per_node=$n_gpus_per_node \
@@ -113,11 +116,11 @@ if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
   token2wav_path=/workspace/CosyVoice2-0.5B
   CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
   torchrun --nproc_per_node=8 \
-      infer_dist.py \
-                  --output-dir $output_dir \
-                  --llm-model-name-or-path $llm_path/merged_hf_model \
-                  --token2wav-path $token2wav_path \
-                  --split-name ${dataset} || exit 1
+      infer_dataset.py \
+        --output-dir $output_dir \
+        --llm-model-name-or-path $llm_path/merged_hf_model \
+        --token2wav-path $token2wav_path \
+        --split-name ${dataset} || exit 1
 
   bash scripts/compute_wer.sh $output_dir ${dataset}
 fi

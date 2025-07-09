@@ -61,26 +61,37 @@ def get_args():
         help="Number of concurrent requests to send in parallel",
     )
 
+    parser.add_argument(
+        "--data-path",
+        type=str,
+        default="./data/emilia_zh-cosy-tiny-test.jsonl",
+        help="Path to the data file",
+    )
     return parser.parse_args()
 
-def prepare_request(
-    tokens,
-    token_lens,
-):
+def prepare_request(tokens, token_lens, gt_text):
+    """Construct HTTP/JSON inference request body."""
+
     data = {
-        "inputs":[
+        "inputs": [
             {
                 "name": "TOKENS",
-                "shape": tokens.shape,
+                "shape": list(tokens.shape),
                 "datatype": "INT32",
-                "data": tokens.tolist()
+                "data": tokens.tolist(),
             },
             {
                 "name": "TOKEN_LENS",
-                "shape": token_lens.shape,
+                "shape": list(token_lens.shape),
                 "datatype": "INT32",
                 "data": token_lens.tolist(),
-            }
+            },
+            {
+                "name": "GT_TEXT",
+                "shape": [1, 1],
+                "datatype": "BYTES",
+                "data": [gt_text],
+            },
         ]
     }
 
@@ -94,9 +105,6 @@ def load_jsonl(file_path: str):
             data.append(json.loads(line.strip()))
     return data
 
-# -----------------------------
-# Async client helpers
-# -----------------------------
 
 async def process_sample(idx, total, sample, session, url, semaphore):
     """Send a single request to the inference server and log the response."""
@@ -105,7 +113,8 @@ async def process_sample(idx, total, sample, session, url, semaphore):
         code_list = sample["code"]
         tokens = np.array(code_list, dtype=np.int32).reshape(1, -1)
         token_lens = np.array([[len(tokens[0])]], dtype=np.int32)
-        data = prepare_request(tokens, token_lens)
+        gt_text = sample["text"]
+        data = prepare_request(tokens, token_lens, gt_text)
 
         # Send HTTP POST
         async with session.post(
@@ -116,14 +125,21 @@ async def process_sample(idx, total, sample, session, url, semaphore):
         ) as rsp:
             result = await rsp.json()
 
-        transcripts = result["outputs"][0]["data"]
+        # Parse outputs (order: REWARDS, TRANSCRIPTS)
+        rewards = None
+        transcripts = None
+        for out in result.get("outputs", []):
+            if out["name"] == "REWARDS":
+                rewards = out["data"][0]
+            elif out["name"] == "TRANSCRIPTS":
+                transcripts = out["data"][0]
 
         # Output summary (prints may interleave across tasks)
         print(f"\n--- Sample {idx}/{total} ---")
-        print(f"Text: {sample['text']}")
-        print(tokens.shape, token_lens.shape)
-        print(result)
-        print(transcripts)
+        print(f"GT Text: {gt_text}")
+        print(f"Tokens shape: {tokens.shape}, Token_lens shape: {token_lens.shape}")
+        print(f"Transcript: {transcripts}")
+        print(f"Reward: {rewards}")
 
 
 async def main_async():
@@ -136,7 +152,7 @@ async def main_async():
     url = f"{server_url}/v2/models/{args.model_name}/infer"
 
     # Load dataset
-    data_list = load_jsonl("/workspace/slam/mair-hub/rl-tutorial/cosyvoice_llm/data/emilia_zh-cosy-tiny-test.jsonl")
+    data_list = load_jsonl(args.data_path)
 
     # Concurrency primitives
     semaphore = asyncio.Semaphore(max(1, args.concurrent_job))
