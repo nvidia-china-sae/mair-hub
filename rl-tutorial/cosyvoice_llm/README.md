@@ -1,68 +1,75 @@
-# CosyVoice2 LLM GRPO Tutorial
+# CosyVoice2 LLM Reinforcement Learning Recipe
 
-This recipe demonstrates how to train the **CosyVoice2** LLM with the **GRPO** algorithm using the [veRL](https://github.com/volcengine/verl) framework.
+This recipe shows how to train the **CosyVoice2** large language model with reinforcement learning algorithms such as **GRPO** using the [veRL](https://github.com/volcengine/verl) framework.
 
-* **Input**: Chinese text
-* **Output**: CosyVoice2 speech tokens
+We initialize the model from a Supervised Fine-Tuned (SFT) version of Qwen2-0.5B-Instruct and then continue training with reinforcement learning. Given an input sentence, the model predicts the corresponding CosyVoice2 speech tokens. For the SFT training recipe please refer to [PR #1887](https://github.com/k2-fsa/icefall/pull/1887).
 
 ## Table of Contents
+
 - [Environment Setup](#environment-setup)
 - [Data Preparation](#data-preparation)
 - [Reward Function & ASR Server](#reward-function--asr-server)
-- [GRPO Training](#grpo-training)
-- [Model Merge & Evaluation](#model-merge--evaluation)
+- [Training](#training)
+- [Evaluation](#evaluation)
 - [Single-Utterance Inference](#single-utterance-inference)
+- [Results](#results)
+- [Acknowledgement](#acknowledgement)
 
 ## Environment Setup
 
-Stage `-1` of `run.sh` installs every dependency:
+Stage `-1` of `run.sh` installs all required dependencies:
 
 ```bash
-bash run.sh -1 -1   # only run stage -1
+bash run.sh -1 -1      # run only stage -1
 ```
 
-It performs:
-1. Clone and install **vllm** (without Megatron).
-2. Clone **CosyVoice** source code to `/workspace/CosyVoice` and install `requirements-cosyvoice.txt`.
-3. Download the TTS codec model `iic/CosyVoice2-0.5B` via **ModelScope** to `/workspace/CosyVoice2-0.5B`.
+The script performs the following tasks:
 
-After the script finishes you should have:
-* working `vllm` installation
-* CosyVoice Python package available in `$PYTHONPATH`
-* `/workspace/CosyVoice2-0.5B` directory with the TTS codec checkpoints
+1. Clones and installs **veRL** (without Megatron).
+2. Checks out the **CosyVoice** source code to `/workspace/CosyVoice` and installs the Python packages from `requirements-cosyvoice.txt`.
+3. Downloads the TTS codec model `iic/CosyVoice2-0.5B` from **ModelScope** into `/workspace/CosyVoice2-0.5B`.
+4. Installs **PytritonSensevoice** together with **Pytriton**.
+5. Downloads the SFT-finetuned CosyVoice2-0.5B LLM whose vocabulary was extended on Emilia-Zh data.
+
+> **Tip**  
+> The **veRL** repository evolves quickly. To reproduce our results you can checkout this [specific commit](https://github.com/yuekaizhang/verl/tree/thread).
 
 ## Data Preparation
 
-Stage `0` converts raw JSONL files to the parquet format expected by veRL:
+Stage `0` converts raw JSONL files into the parquet format expected by veRL:
 
 ```bash
 bash run.sh 0 0
 ```
 
-`prepare_data.py` expects a JSON/JSONL file with the following minimal schema:
+`prepare_data.py` expects a JSON/JSONL file with at least the following schema:
 
 ```jsonc
 {
-  "text": "一句待合成的中文句子"
+  "text": "An example sentence to be synthesized."
 }
 ```
 
-It produces two parquet files:
+Create two JSONL files – `train.jsonl` and `test.jsonl`.  
+The script will generate two parquet files:
 
 ```
 data/parquet_tiny/train.parquet
 data/parquet_tiny/test.parquet
 ```
 
-Each sample is automatically wrapped into a chat-style prompt with a special system token `<|SPEECH_GENERATION_START|>` so that the LLM learns to output CosyVoice speech tokens.
+Each sample is automatically wrapped into a chat-style prompt with the special system token `<|SPEECH_GENERATION_START|>` so that the LLM learns to output CosyVoice2 speech tokens.
+
+> **Tip**  
+> For the `prompt_template` we recommend using the same configuration as during SFT training. See the corresponding setup [here](https://github.com/yuekaizhang/icefall/blob/emilia/egs/emilia/TTS/llasa_cosyvoice2_token/train.py#L84).
 
 ## Reward Function & ASR Server
 
 To compute rewards we run a lightweight server that:
 
-1. Converts generated speech tokens back to a 16 kHz waveform with **CosyVoice2**.
-2. Transcribes it with **SenseVoice** ASR.
-3. Computes the pinyin-level WER w.r.t ground-truth text and converts it to a score in \[0 .. 1\].
+1. Converts generated speech tokens back to a 16 kHz waveform with the **CosyVoice2** pretrained U-Net model.
+2. Transcribes the waveform with **SenseVoice** ASR.
+3. Calculates the pinyin-level error rate against the ground-truth text and maps it to a score in the range \[0 … 1\].
 
 Start the server (stage `1`) in a dedicated terminal / GPU:
 
@@ -71,9 +78,9 @@ bash run.sh 1 1
 # Triton server listens on ports 8000/8001/8002
 ```
 
-The Python implementation lives in [`reward_tts.py`](./reward_tts.py).
+The custom reward implementation lives in [`reward_tts.py`](./reward_tts.py) and calls the server to obtain the reward score.
 
-## GRPO Training
+## Training
 
 Run stage `2` to start GRPO training:
 
@@ -81,31 +88,34 @@ Run stage `2` to start GRPO training:
 bash run.sh 2 2
 ```
 
-Important CLI arguments used in the call to `verl.trainer.main_ppo`:
+Key CLI arguments passed to `verl.trainer.main_ppo`:
 
-* `algorithm.adv_estimator=grpo` – switch from PPO to GRPO
-* `data.train_files=data/parquet_aishell3/train.parquet` & `data.val_files=data/parquet_aishell3/test.parquet`
-* `actor_rollout_ref.model.path=/workspace/rl/llasa_cosyvoice2_token_qwen_0.5b/checkpoint-885000` – pretrained CosyVoice2 LLM
-* `custom_reward_function.path=reward_tts.py` – reward function described above
-* `trainer.total_epochs=1` – train for one epoch (adjust as needed)
+* `algorithm.adv_estimator=grpo` – use GRPO instead of PPO.
+* `data.train_files=data/parquet_aishell3/train.parquet` and `data.val_files=data/parquet_aishell3/test.parquet`
+* `actor_rollout_ref.model.path=/workspace/rl/llasa_cosyvoice2_token_qwen_0.5b/checkpoint-885000` – path to the pretrained CosyVoice2 LLM.
+* `custom_reward_function.path=reward_tts.py` – custom reward function described above.
+* `trainer.total_epochs=1` – number of training epochs (adjust as needed).
 
-Tune `CUDA_VISIBLE_DEVICES`, batch sizes and learning rate according to your hardware.
+Tune `CUDA_VISIBLE_DEVICES`, batch sizes and other hyper-parameters according to your hardware.
 
-## Model Merge & Evaluation
+## Evaluation
 
-After training completes we gather the sharded FSDP weights and dump a HuggingFace-style checkpoint (stage `3`):
+After training finishes we gather the sharded FSDP weights and export a HuggingFace-style checkpoint (stage `3`):
 
 ```bash
 bash run.sh 3 3   # merges weights into $llm_path/merged_hf_model
 ```
 
-We can then evaluate the model on the zero-shot Chinese test set (stage `4`):
+We can then evaluate the model on the CosyVoice3 zero-shot Chinese test set (stage `4`):
 
 ```bash
 bash run.sh 4 4
 ```
 
-This launches distributed inference via `infer_dist.py` and computes WER with `scripts/compute_wer.sh`.
+This command launches distributed inference via `infer_dist.py` and computes WER with `scripts/compute_wer.sh`.
+
+> **Tip**  
+> The script also supports the Seed-TTS test set by setting `dataset=test_zh`.
 
 ## Single-Utterance Inference
 
@@ -115,8 +125,18 @@ For a quick demo run stage `5`:
 bash run.sh 5 5
 ```
 
-It synthesises a tongue-twister using the merged checkpoint and prints the path to the generated audio.
+The script synthesizes a tongue-twister using the merged checkpoint and prints the path of the generated audio file.
 
----
+## Results
 
-Happy TTS fine-tuning! :musical_note: 
+| Model                                                 | Seed-TTS `test_zh` CER | Comment                                                                        |
+|-------------------------------------------------------|------------------------|--------------------------------------------------------------------------------|
+| Official CosyVoice2 LLM                               | **1.45 %**             | See the [paper](https://arxiv.org/abs/2412.10117)                              |
+| SFT (initialized from Qwen2-0.5B-Instruct)            | 1.81 %                 | See [PR #1887](https://github.com/k2-fsa/icefall/pull/1887)                    |
+| GRPO (this work, trained on AIShell-3)                | **1.06 %**             |                                                                                |
+
+## Acknowledgement
+
+This work is inspired by the implementation in  
+https://github.com/channel-io/ch-tts-llasa-rl-grpo
+

@@ -1,5 +1,5 @@
-# Copyright (c) 2024 Tsinghua Univ. (authors: Xingchen Song)
-#               2025               （authors: Yuekai Zhang）
+# SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Modified from https://github.com/xingchensong/S3Tokenizer/blob/main/s3tokenizer/cli.py
 """ Example Usage
 dataset=zero_shot_zh
 output_dir=./outputs_rl_aishell3_step${step}_${dataset}_jit_trt_fp16_reward_tts

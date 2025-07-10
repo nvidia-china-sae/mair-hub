@@ -16,15 +16,29 @@ export PYTHONPATH=/workspace/CosyVoice
 
 if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
   log "stage -1: install vllm and CosyVoice"
-  git clone https://github.com/vllm-project/vllm.git
-  cd vllm
+  # install verl
+  git clone https://github.com/volcengine/verl.git
+  cd verl
   USE_MEGATRON=0 bash scripts/install_vllm_sglang_mcore.sh
   pip install --no-deps -e .
 
+  # install CosyVoice
   git clone https://github.com/FunAudioLLM/CosyVoice.git /workspace/CosyVoice
   pip install -r ./requirements-cosyvoice.txt
 
+  # download CosyVoice2-0.5B for token2wav
   modelscope download --model iic/CosyVoice2-0.5B --local-dir /workspace/CosyVoice2-0.5B
+
+  # install PytritonSenseVoice
+  git clone https://github.com/yuekaizhang/PytritonSenseVoice.git /workspace/PytritonSenseVoice
+  cd /workspace/PytritonSenseVoice
+  pip install -e .
+
+  # install Pytriton
+  pip install -U nvidia-pytriton
+
+  # download CosyVoice2-0.5B LLM
+  huggingface-cli download --local-dir /workspace/llasa_cosyvoice2_token_qwen_0.5b yuekai/llasa_cosyvoice2_token_qwen_0.5b
 fi
 
 
@@ -98,8 +112,8 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
       trainer.total_epochs=1
 fi
 
-step=3000
-llm_path=./checkpoints/tts_grpo/aishell3_reward_tts_prime/global_step_${step}
+step=2100
+llm_path=./checkpoints/llasa_tts_grpo/aishell3_reward_tts_prime/global_step_${step}
 if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
   log "stage 3: merge the model"
   python -m verl.model_merger merge \
@@ -112,7 +126,6 @@ if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
   log "stage 4: Test the model"
   dataset=zero_shot_zh
   output_dir=./outputs_rl_aishell3_step${step}_${dataset}_jit_trt_fp16_reward_tts
-
   token2wav_path=/workspace/CosyVoice2-0.5B
   CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
   torchrun --nproc_per_node=8 \
