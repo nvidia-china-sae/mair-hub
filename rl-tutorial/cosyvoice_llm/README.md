@@ -31,7 +31,7 @@ The script performs the following tasks:
 4. Installs **PytritonSensevoice** together with **Pytriton**.
 5. Downloads the SFT-finetuned CosyVoice2-0.5B LLM whose vocabulary was extended on Emilia-Zh data.
 
-> **Tip**  
+> [!TIP]
 > The **veRL** repository evolves quickly. To reproduce our results you can checkout this [specific commit](https://github.com/yuekaizhang/verl/tree/thread).
 
 ## Data Preparation
@@ -60,7 +60,7 @@ data/parquet_tiny/test.parquet
 
 Each sample is automatically wrapped into a chat-style prompt with the special system token `<|SPEECH_GENERATION_START|>` so that the LLM learns to output CosyVoice2 speech tokens.
 
-> **Tip**  
+> [!TIP]
 > For the `prompt_template` we recommend using the same configuration as during SFT training. See the corresponding setup [here](https://github.com/yuekaizhang/icefall/blob/emilia/egs/emilia/TTS/llasa_cosyvoice2_token/train.py#L84).
 
 ## Reward Function & ASR Server
@@ -114,7 +114,7 @@ bash run.sh 4 4
 
 This command launches distributed inference via `infer_dist.py` and computes WER with `scripts/compute_wer.sh`.
 
-> **Tip**  
+> [!TIP]
 > The script also supports the Seed-TTS test set by setting `dataset=test_zh`.
 
 ## Single-Utterance Inference
