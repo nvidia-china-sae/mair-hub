@@ -68,7 +68,7 @@ pip install math-verify[antlr4_9_3]
 | 训练参数 | data.train_batch_size | 每个 RL step 消耗的 prompt 的数量 |
 | 训练参数 | actor_rollout_ref.rollout.n | 在 rollout 阶段，为每个 prompt 生成多少个 responses。对于 GRPO 和 GLOO 必须要大于 1 |
 | 训练参数 | actor_rollout_ref.rollout.temperature | 在 rollout 阶段，为prompt 生成 response 时所需的温度系数。值越大，则随机性越强。 |
-| 训练参数 | actor_rollout_ref.actor.ppo_mini_batch_size | rollout 结束后，更新 actor 参数时的 batch_size，必须大于`data.train_batch_size` |
+| 训练参数 | actor_rollout_ref.actor.ppo_mini_batch_size | rollout 结束后，更新 actor 参数时的 batch_size，必须小于且整除`data.train_batch_size` (比如 `data.train_batch_size`=16, `actor_rollout_ref.actor.ppo_mini_batch_size`=8 或 16) |
 | 训练参数 | algorithm.adv_estimator | 使用的 RL 算法，目前支持 PPO、GRPO 等 |
 | 训练参数 | algorithm.kl_ctrl.kl_coef | 计算 token level rewards 时的 KL 系数。原始 GRPO应该设为 0。 |
 | GRPO 参数 | actor_rollout_ref.actor.use_kl_loss | 是否使用外置 KL loss。原始 GRPO 算法应该设为 True。 |
