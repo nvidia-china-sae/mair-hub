@@ -127,11 +127,13 @@ if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
   dataset=zero_shot_zh
   output_dir=./outputs_rl_aishell3_step${step}_${dataset}_jit_trt_fp16_reward_tts
   token2wav_path=/workspace/CosyVoice2-0.5B
+  model_path=$llm_path/merged_hf_model
+
   CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
   torchrun --nproc_per_node=8 \
       infer_dataset.py \
         --output-dir $output_dir \
-        --llm-model-name-or-path $llm_path/merged_hf_model \
+        --llm-model-name-or-path $model_path \
         --token2wav-path $token2wav_path \
         --split-name ${dataset} || exit 1
 

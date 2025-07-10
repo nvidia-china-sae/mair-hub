@@ -23,4 +23,10 @@ python3 scripts/offline-decode-files.py  \
     --log-dir $wav_dir \
     --feature-dim=80 \
     --split-name $split_name \
+    --name sherpa_onnx \
     $wav_files
+
+# python3 scripts/paraformer-pytriton-client.py  \
+#     --log-dir $wav_dir \
+#     --split-name $split_name \
+#     $wav_files

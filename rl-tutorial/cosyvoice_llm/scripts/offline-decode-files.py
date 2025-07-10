@@ -97,8 +97,17 @@ from datasets import load_dataset
 import logging
 from collections import defaultdict
 import kaldialign
+from zhon.hanzi import punctuation
+import string
+punctuation_all = punctuation + string.punctuation
 Pathlike = Union[str, Path]
 
+def remove_punctuation(text: str) -> str:
+    for x in punctuation_all:
+        if x == '\'':
+            continue
+        text = text.replace(x, '')
+    return text
 
 def store_transcripts(
     filename: Pathlike, texts: Iterable[Tuple[str, str, str]], char_level: bool = False
@@ -581,7 +590,7 @@ def normalize_text_alimeeting(text: str) -> str:
     See: https://github.com/yufan-aslp/AliMeeting/blob/main/asr/local/text_normalize.pl
     """
     import re
-
+    text = text.replace('\u00A0', '') # test_hard
     text = text.replace(" ", "")
     text = text.replace("<sil>", "")
     text = text.replace("<%>", "")
@@ -606,6 +615,7 @@ def normalize_text_alimeeting(text: str) -> str:
     text = text.replace("。", "")
     text = text.replace("、", "")
     text = text.replace("？", "")
+    text = remove_punctuation(text)
     return text
 
 
