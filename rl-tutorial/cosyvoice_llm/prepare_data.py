@@ -29,8 +29,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--train_file", required=True, help="Path to training JSON/JSONL file")
     parser.add_argument("--test_file", required=True, help="Path to test JSON/JSONL file")
-    parser.add_argument("--local_dir", default="~/data/llasa-tts-rl-grpo")
+    parser.add_argument("--local_dir", default=None, required=True)
     parser.add_argument("--hdfs_dir", default=None)
+    parser.add_argument("--use_custom_template", action="store_true", help="Use custom template for training")
 
     args = parser.parse_args()
 
@@ -39,11 +40,17 @@ if __name__ == "__main__":
     test_dataset = datasets.load_dataset("json", data_files=args.test_file)['train']
 
     # add a row to each data item that represents a unique id
-    def make_map_fn(split):
+    def make_map_fn(split, use_custom_template=False):
         def process_fn(example, idx):
             text = example.pop("text")
-
-            question = f"Convert the text to speech: {text}"
+            if use_custom_template:
+                question = f"Convert the text to speech: {text}"
+                answer = "<|SPEECH_GENERATION_START|>"
+                print(f"use custom template for {split} {idx}")
+            else:
+                # use cosyvoice2 official huggingface compatible checkpoint template
+                question = text
+                answer = ""
 
             data = {
                 "data_source": f"{args.train_file}_{args.test_file}",  # Use file names as data source
@@ -54,7 +61,7 @@ if __name__ == "__main__":
                     },
                     {
                         "role": "assistant",
-                        "content": "<|SPEECH_GENERATION_START|>",
+                        "content": answer,
                     },
                 ],
                 "ability": "text-to-speech",
@@ -69,8 +76,8 @@ if __name__ == "__main__":
 
         return process_fn
 
-    train_dataset = train_dataset.map(function=make_map_fn("train"), with_indices=True)
-    test_dataset = test_dataset.map(function=make_map_fn("test"), with_indices=True)
+    train_dataset = train_dataset.map(function=make_map_fn("train", use_custom_template=args.use_custom_template), with_indices=True)
+    test_dataset = test_dataset.map(function=make_map_fn("test", use_custom_template=args.use_custom_template), with_indices=True)
 
     local_dir = args.local_dir
     hdfs_dir = args.hdfs_dir

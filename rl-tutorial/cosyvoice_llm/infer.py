@@ -21,7 +21,7 @@ from argparse import ArgumentParser
 import sys
 
 sys.path.append("/workspace/CosyVoice/third_party/Matcha-TTS")
-
+TEMPLATE = "{% for message in messages %}{%- if message['role'] == 'user' %}{{- '<|im_start|>' + message['role'] + '\n' + 'Convert the text to speech: ' + message['content'] + '<|im_end|>\n'}}{%- elif message['role'] == 'assistant' %}{{- '<|im_start|>' + message['role'] + '\n' + '<|SPEECH_GENERATION_START|>' + message['content']}}{%- endif %}{%- endfor %}"
 
 def get_args():
     parser = ArgumentParser()
@@ -138,13 +138,13 @@ token2wav_model = CosyVoice2(
 prompt_speech_16k = load_wav(args.prompt_speech_path, 16000)
 
 with torch.no_grad():
- 
     # Tokenize the text
     chat = [
-        {"role": "user", "content": f"Convert the text to speech: {args.input_text}"},
-        {"role": "assistant", "content": "<|SPEECH_GENERATION_START|>"}
+        {"role": "user", "content": f"{args.input_text}"},
+        {"role": "assistant", "content": ""}
     ]
-
+    if 'system' in tokenizer.chat_template:
+        tokenizer.chat_template = TEMPLATE
     input_ids = tokenizer.apply_chat_template(
         chat, 
         tokenize=True, 

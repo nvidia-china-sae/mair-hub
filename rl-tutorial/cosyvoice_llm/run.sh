@@ -37,17 +37,28 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
   # install Pytriton
   pip install -U nvidia-pytriton
 
-  # download CosyVoice2-0.5B LLM
+  # download custom CosyVoice2-0.5B LLM
   huggingface-cli download --local-dir /workspace/llasa_cosyvoice2_token_qwen_0.5b yuekai/llasa_cosyvoice2_token_qwen_0.5b
+
+  # download official CosyVoice2-0.5B LLM
+  # First, obtained the huggingface compatible checkpoint. You could directly download the checkpoint from yuekai/cosyvoice2_llm
+  huggingface-cli download --local-dir ./transformers_cosyvoice2_llm yuekai/cosyvoice2_llm
+  # Or, you could use the following command to convert the pretrained model to huggingface compatible checkpoint
+  # python3 pretrained_to_huggingface.py \
+  #   --pretrained-cosyvoice2-path /workspace/CosyVoice2-0.5B \
+  #   --save-path ./transformers_cosyvoice2_llm
 fi
 
 
 if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
   log "stage 0: prepare data into verl format"
+  # yuekai/llasa_cosyvoice2_token_qwen_0.5b is the emilia zh trained model, please set use_custom_template=True to use the custom template
+  # yuekai/cosyvoice2_llm is the official cosyvoice2 llm model, please set use_custom_template=False to use the official template
   python prepare_data.py \
     --train_file data/emilia_zh-cosy-tiny-train.jsonl \
     --test_file data/emilia_zh-cosy-tiny-test.jsonl \
-    --local_dir data/parquet_tiny
+    --local_dir data/parquet_tiny \
+    --use_custom_template
 fi
 
 if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
@@ -62,6 +73,8 @@ if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
   # async test the reward server
   # python3 token2wav_asr_client.py
 fi 
+
+sft_model_path=/workspace/rl/llasa_cosyvoice2_token_qwen_0.5b/checkpoint-885000
 
 if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
   log "stage 2: grpo train"
@@ -79,7 +92,7 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
       data.max_response_length=1024 \
       data.truncation='error' \
       actor_rollout_ref.model.use_remove_padding=True \
-      actor_rollout_ref.model.path='/workspace/rl/llasa_cosyvoice2_token_qwen_0.5b/checkpoint-885000' \
+      actor_rollout_ref.model.path=$sft_model_path \
       actor_rollout_ref.actor.optim.lr=1e-6 \
       actor_rollout_ref.actor.ppo_mini_batch_size=16 \
       actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=$micro_batch_size \

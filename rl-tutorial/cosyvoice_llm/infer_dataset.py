@@ -53,7 +53,7 @@ except RuntimeError:
     pass
 
 
-TEMPLATE = "{% for message in messages %}{{'<|im_start|>' + message['role'] + '\n' + message['content']}}{% if loop.last %}{{ '<|im_end|>'}}{% else %}{{ '<|im_end|>\n' }}{% endif %}{% endfor %}"
+TEMPLATE = "{% for message in messages %}{%- if message['role'] == 'user' %}{{- '<|im_start|>' + message['role'] + '\n' + 'Convert the text to speech: ' + message['content'] + '<|im_end|>\n'}}{%- elif message['role'] == 'assistant' %}{{- '<|im_start|>' + message['role'] + '\n' + '<|SPEECH_GENERATION_START|>' + message['content']}}{%- endif %}{%- endfor %}"
 
 
 def audio_decode_cosyvoice2(
@@ -231,11 +231,11 @@ def data_collator(batch, tokenizer, s3_tokenizer):
         prompt_audio_cosy2_id_str = convert_cosy2_tokens_to_speech_id_str(prompt_audio_cosy2tokens)
         # Create chat template for LLM generation
         chat = [
-            {"role": "user", "content": f"Convert the text to speech: {full_text}"},
-            # {"role": "assistant", "content": "<|SPEECH_GENERATION_START|>"}
-            {"role": "assistant", "content": f"<|SPEECH_GENERATION_START|>{prompt_audio_cosy2_id_str}"}
+            {"role": "user", "content": full_text},
+            {"role": "assistant", "content": prompt_audio_cosy2_id_str}
         ]
-
+        if 'system' in tokenizer.chat_template:
+            tokenizer.chat_template = TEMPLATE
         input_ids = tokenizer.apply_chat_template(
             chat,
             tokenize=True,
