@@ -129,11 +129,11 @@ The script synthesizes a tongue-twister using the merged checkpoint and prints t
 
 ## Results
 
-| Model                                                 | Seed-TTS `test_zh` CER | Comment                                                                        |
-|-------------------------------------------------------|------------------------|--------------------------------------------------------------------------------|
-| Official CosyVoice2 LLM                               | **1.45 %**             | See the [paper](https://arxiv.org/abs/2412.10117)                              |
-| SFT (initialized from Qwen2-0.5B-Instruct)            | 1.81 %                 | See [PR #1887](https://github.com/k2-fsa/icefall/pull/1887)                    |
-| GRPO (this work, trained on AIShell-3)                | **1.06 %**             |                                                                                |
+| Model                                                 | Seed-TTS `test_zh` CER | Cosyvoice3 `zero_shot_zh` |Comment                                                                        |
+|-|------------------------------------------------------|------------------------|--------------------------------------------------------------------------------|
+| Official CosyVoice2 LLM                               | 1.45 %             |4.08%| See the [paper](https://arxiv.org/abs/2412.10117)                              |
+| SFT (initialized from Qwen2-0.5B-Instruct)            | 1.81 %                 |4.83%| See [PR #1887](https://github.com/k2-fsa/icefall/pull/1887)                    |
+| GRPO (this work, trained on AIShell-3)                | **1.06 %**             |4.03%|                                                                                |
 
 ## Acknowledgement
 
