@@ -47,6 +47,7 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
   # python3 pretrained_to_huggingface.py \
   #   --pretrained-cosyvoice2-path /workspace/CosyVoice2-0.5B \
   #   --save-path ./transformers_cosyvoice2_llm
+  # If you would like to use the official CosyVoice2-0.5B LLM and do RL training, please see run_official.sh
 fi
 
 
@@ -85,8 +86,8 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
   train_batch_size=32
   python3 -m verl.trainer.main_ppo \
       algorithm.adv_estimator=grpo \
-      data.train_files=data/parquet_aishell3/train.parquet \
-      data.val_files=data/parquet_aishell3/test.parquet \
+      data.train_files=data/parquet_aishell3_custom/train.parquet \
+      data.val_files=data/parquet_aishell3_custom/test.parquet \
       data.train_batch_size=$train_batch_size \
       data.max_prompt_length=1024 \
       data.max_response_length=1024 \
@@ -115,14 +116,15 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
       custom_reward_function.path=reward_tts.py \
       custom_reward_function.name=compute_score \
       trainer.project_name='llasa_tts_grpo' \
-      trainer.experiment_name='aishell3_reward_tts_prime' \
+      trainer.experiment_name='aishell3_reward_tts_prime_test' \
       trainer.logger=['console','wandb'] \
       trainer.n_gpus_per_node=$n_gpus_per_node \
       trainer.nnodes=1 \
       trainer.save_freq=100 \
       trainer.test_freq=400 \
       trainer.resume_mode='auto' \
-      trainer.total_epochs=1
+      trainer.total_epochs=1 \
+      trainer.val_before_train=False
 fi
 
 step=2100
