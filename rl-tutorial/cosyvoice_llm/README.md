@@ -1,6 +1,6 @@
 # CosyVoice2 LLM Reinforcement Learning Recipe
 
-This recipe shows how to train the **CosyVoice2** large language model with reinforcement learning algorithms such as **GRPO** using the [veRL](https://github.com/volcengine/verl) framework.
+This recipe shows how to train the **CosyVoice2** large language model with reinforcement learning algorithms such as **GRPO** using the [veRL](https://github.com/volcengine/verl) framework. Our experiments show that applying GRPO reduces the character error rate (CER) on the Seed-TTS test_zh set from 1.81% to 1.06%.
 
 We initialize the model from a Supervised Fine-Tuned (SFT) version of Qwen2-0.5B-Instruct and then continue training with reinforcement learning. Given an input sentence, the model predicts the corresponding CosyVoice2 speech tokens. For the SFT training recipe please refer to [PR #1887](https://github.com/k2-fsa/icefall/pull/1887).
 
@@ -36,12 +36,6 @@ The script performs the following tasks:
 
 ## Data Preparation
 
-Stage `0` converts raw JSONL files into the parquet format expected by veRL:
-
-```bash
-bash run.sh 0 0
-```
-
 `prepare_data.py` expects a JSON/JSONL file with at least the following schema:
 
 ```jsonc
@@ -49,7 +43,13 @@ bash run.sh 0 0
   "text": "An example sentence to be synthesized."
 }
 ```
+You can download the JSONL files from the metadata directory of the [SparkAudio/voxbox](https://huggingface.co/datasets/SparkAudio/voxbox/tree/main/metadata) dataset on Hugging Face.
 
+Stage `0` converts raw JSONL files into the parquet format expected by veRL:
+
+```bash
+bash run.sh 0 0
+```
 Create two JSONL files – `train.jsonl` and `test.jsonl`.  
 The script will generate two parquet files:
 
