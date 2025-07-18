@@ -19,6 +19,7 @@ The [rl-tutorial](./rl-tutorial/) directory contains resources focused on reinfo
 - [r1-zero](./rl-tutorial/r1-zero/): Tutorial of using the veRL framework to reproduce the reinforcement learning training process of DeepSeek-R1-Zero in the mathematics domain.
 - [r1-like](./rl-tutorial/r1-like/): Tutorial of using the openRLHF framework to reproduce the reinforcement learning training process of DeepSeek-R1 in the mathematics domain.
 - [vlm-R1](./rl-tutorial/vlm-R1/): Tutorial of using the veRL framework to train VLM models with reinforcement learning using both text and multimodal data to enhance reasoning capabilities in the mathematics domain.
+- [cosyvoice_llm](./rl-tutorial/cosyvoice_llm/): A training recipe for using the veRL framework to conduct reinforcement learning experiments on the CosyVoice2 LLM in the speech-generation domain.
 
 ### Speech-LLM
 
