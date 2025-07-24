@@ -21,3 +21,9 @@ soundfile==0.12.1
 tensorboard==2.14.0
 wget==3.2
 WeTextProcessing==1.0.3
+s3tokenizer
+tensorrt
+sherpa_onnx
+jiwer
+zhon
+numpy==1.25.2

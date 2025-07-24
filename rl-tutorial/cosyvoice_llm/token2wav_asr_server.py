@@ -70,7 +70,7 @@ class _ASR_Server:
 
         results = self._model.transcribe_single_batch(
             wavs,
-            language="auto",
+            language="zh",
             textnorm="woitn",
         )
         texts = [result.text for result in results]
@@ -203,7 +203,7 @@ class _Token2Wav_ASR:
 
         results = self.asr_model.transcribe_single_batch(
             wavs,
-            language="auto",
+            language="zh",
             textnorm="woitn",
         )
         texts = [result.text for result in results]
@@ -231,9 +231,11 @@ class _Token2Wav_ASR:
             reward_val = 1.0 - np.tanh(3.0 * c)
             reward_val = max(0.0, min(1.0, reward_val))
             rewards.append(reward_val)
+            print(f"gt_text: {gt_text}, hyp_text: {hyp_text}, reward_val: {reward_val}")
 
         transcripts = np.char.encode(np.array(texts).reshape(-1, 1), "utf-8")
         rewards_arr = np.array(rewards, dtype=np.float32).reshape(-1, 1)
+
 
         return {"REWARDS": rewards_arr, "TRANSCRIPTS": transcripts}
 

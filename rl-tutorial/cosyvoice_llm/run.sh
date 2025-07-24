@@ -19,7 +19,9 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
   # install verl
   git clone https://github.com/volcengine/verl.git
   cd verl
-  USE_MEGATRON=0 bash scripts/install_vllm_sglang_mcore.sh
+  USE_MEGATRON=0 USE_SGLANG=0 bash scripts/install_vllm_sglang_mcore.sh
+  # manually install flash attn above 2.7.4post1
+  pip install -r requirements.txt
   pip install --no-deps -e .
 
   # install CosyVoice
@@ -36,6 +38,7 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
 
   # install Pytriton
   pip install -U nvidia-pytriton
+  # export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/opt/conda/lib:/opt/conda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 
   # download custom CosyVoice2-0.5B LLM
   huggingface-cli download --local-dir /workspace/llasa_cosyvoice2_token_qwen_0.5b yuekai/llasa_cosyvoice2_token_qwen_0.5b
@@ -50,16 +53,16 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
   # If you would like to use the official CosyVoice2-0.5B LLM and do RL training, please see run_official.sh
 fi
 
-
+data_dir=data/parquet_emilia_zh
 if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
   log "stage 0: prepare data into verl format"
   # yuekai/llasa_cosyvoice2_token_qwen_0.5b is the emilia zh trained model, please set use_custom_template=True to use the custom template
   # yuekai/cosyvoice2_llm is the official cosyvoice2 llm model, please set use_custom_template=False to use the official template
+  mkdir -p $data_dir
   python prepare_data.py \
-    --train_file data/emilia_zh-cosy-tiny-train.jsonl \
-    --test_file data/emilia_zh-cosy-tiny-test.jsonl \
-    --local_dir data/parquet_tiny \
-    --use_custom_template
+    --train_file data/emilia_zh-cosy-zh-filtered.jsonl \
+    --test_file data/emilia_test.jsonl \
+    --local_dir $data_dir
 fi
 
 if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
@@ -86,11 +89,11 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
   train_batch_size=32
   python3 -m verl.trainer.main_ppo \
       algorithm.adv_estimator=grpo \
-      data.train_files=data/parquet_aishell3_custom/train.parquet \
-      data.val_files=data/parquet_aishell3_custom/test.parquet \
+      data.train_files=$data_dir/train.parquet \
+      data.val_files=$data_dir/test.parquet \
       data.train_batch_size=$train_batch_size \
       data.max_prompt_length=1024 \
-      data.max_response_length=1024 \
+      data.max_response_length=512 \
       data.truncation='error' \
       actor_rollout_ref.model.use_remove_padding=True \
       actor_rollout_ref.model.path=$sft_model_path \
@@ -107,28 +110,30 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
       actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
       actor_rollout_ref.rollout.do_sample=true \
       actor_rollout_ref.rollout.temperature=0.8 \
-      actor_rollout_ref.rollout.top_p=0.9 \
+      actor_rollout_ref.rollout.top_p=0.95 \
+      actor_rollout_ref.rollout.top_k=50 \
       actor_rollout_ref.rollout.n=4 \
       actor_rollout_ref.rollout.val_kwargs.do_sample=true \
       actor_rollout_ref.rollout.val_kwargs.temperature=0.8 \
-      actor_rollout_ref.rollout.val_kwargs.top_p=0.9 \
+      actor_rollout_ref.rollout.val_kwargs.top_p=0.95 \
+      actor_rollout_ref.rollout.val_kwargs.top_k=50 \
       reward_model.reward_manager=prime \
       custom_reward_function.path=reward_tts.py \
       custom_reward_function.name=compute_score \
       trainer.project_name='llasa_tts_grpo' \
-      trainer.experiment_name='aishell3_reward_tts_prime_test' \
+      trainer.experiment_name='emilia_zh' \
       trainer.logger=['console','wandb'] \
       trainer.n_gpus_per_node=$n_gpus_per_node \
       trainer.nnodes=1 \
       trainer.save_freq=100 \
-      trainer.test_freq=400 \
+      trainer.test_freq=100 \
       trainer.resume_mode='auto' \
       trainer.total_epochs=1 \
       trainer.val_before_train=False
 fi
 
-step=2100
-llm_path=./checkpoints/llasa_tts_grpo/aishell3_reward_tts_prime/global_step_${step}
+step=1600
+llm_path=./checkpoints/llasa_tts_grpo/emilia_zh/global_step_${step}
 if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
   log "stage 3: merge the model"
   python -m verl.model_merger merge \
@@ -139,8 +144,10 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
 fi 
 if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
   log "stage 4: Test the model"
-  dataset=zero_shot_zh
-  output_dir=./outputs_rl_aishell3_step${step}_${dataset}_jit_trt_fp16_reward_tts
+  datasets=(zero_shot_zh test_zh)
+  for dataset in ${datasets[@]}; do
+  output_dir=./outputs_rl_emilia_zh_step${step}_${dataset}
+
   token2wav_path=/workspace/CosyVoice2-0.5B
   model_path=$llm_path/merged_hf_model
 
@@ -151,8 +158,8 @@ if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
         --llm-model-name-or-path $model_path \
         --token2wav-path $token2wav_path \
         --split-name ${dataset} || exit 1
-
   bash scripts/compute_wer.sh $output_dir ${dataset}
+  done
 fi
 
 if [ $stage -le 5 ] && [ $stop_stage -ge 5 ]; then
