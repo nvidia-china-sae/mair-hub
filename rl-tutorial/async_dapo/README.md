@@ -183,7 +183,7 @@ stateDiagram-v2
     Cancelled --> [*]
     Completed --> [*]: No More Pending
     
-    note right of Running: Max concurrent tasks:\nconfigurable limit
+    note right of Running: Max concurrent tasks:<br/>configurable limit
 ```
 
 **Implementation Details:**
