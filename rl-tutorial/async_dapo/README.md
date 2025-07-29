@@ -2,18 +2,18 @@
 
 ## Overview
 
-Inspired by MiMo, this Async DAPO recipe combines veRL's AgentLoop async rollout functionality with the DAPO algorithm to enhance end-to-end training efficiency. This recipe provides efficient distributed processing with intelligent resource management, early stopping mechanisms, and dynamic task scheduling for large language model training.
+Inspired by MiMo, this Async DAPO recipe combines veRL's AgentLoop async rollout functionality with the DAPO algorithm to enhance end-to-end training efficiency. This recipe provides efficient distributed processing with intelligent resource management, early stopping mechanisms, and dynamic task scheduling for single-turn RLVR.
 
 ## Key Features
 
 - **🚀 Asynchronous Processing**: Non-blocking concurrent request handling for maximum throughput
-- **⚡ Early Stopping Mechanism**: Intelligent early termination when target objectives are met
+- **⚡ Early Stopping Mechanism**: Intelligent early termination when a target number of prompts are completed and validated (with a reward variance)
 - **🔄 Dynamic Load Balancing**: Global load balancer with real-time server allocation
-- **🎯 Seamless Reward Computation & Filtering**: Immediate reward calculation and DAPO-like prompt filtering upon response completion, eliminating the need to wait for entire batch rollout
+- **🎯 Seamless Reward Computation & Prompt Filtering**: Immediate reward computation and filtering for each prompt upon its response completion, without waiting for other prompts
 
 ## Usage
 
-### 0. Setup Environment
+### 0. Install veRL
 
 ```bash
 git clone https://github.com/volcengine/verl
@@ -30,7 +30,7 @@ cp -r async_dapo verl/recipe/async_dapo
 
 ```bash
 export DATA_HOME=${DATA_HOME:-"${HOME}/data"}
-bash prepare_dapo_data.sh
+bash recipe/async_dapo/prepare_dapo_data.sh
 ```
 
 ### 2. Train
@@ -40,7 +40,8 @@ We use Qwen3-8B-Base and the DAPO dataset as the model and data. The main traini
 ```bash
 export VLLM_USE_V1=1 
 export HOME_DIR=${HOME}
-bash test_qwen3_8b.sh
+# Now, we haved entered the verl root directory
+bash recipe/async_dapo/test_qwen3_8b.sh
 ```
 
 
@@ -85,22 +86,28 @@ graph TB
 
 ## Core Mechanisms
 
-### 1. Early Stopping Coordination
+### 1. Seamless Reward Computation & Prompt Filtering
+
+We fused the reward computation and prompt filtering process with the rollout process, so that the reward computation and prompt filtering can be done immediately after the response generation is completed.
+
+This eliminates the need to wait for the entire batch rollout to complete, and allows for early stopping and prompt filtering to be done in a more timely manner.
+
+
+### 2. Early Stopping Coordination
 
 The Early Stopping Coordinator provides intelligent termination control to optimize training efficiency and prevent unnecessary computation.
 
 **Key Components:**
-- **Global State Tracking**: Monitors completed prompts across all workers
-- **Completion Validation**: Tracks both valid and invalid prompt completions
+- **Global State Tracking**: Monitors completed and validated prompts across all workers
 - **Signal Propagation**: Broadcasts early stopping signals to all active workers
 
 **Implementation Flow:**
 
 ```mermaid
 sequenceDiagram
-    participant W as Worker
+    participant W as AsyncLoopWorker
     participant ESC as Early Stopping Coordinator
-    participant ALM as Agent Loop Manager
+    participant ALM as AgentLoopManager
     
     ALM->>ESC: Initialize(expected_prompt_num)
     loop For each completed prompt
@@ -115,12 +122,7 @@ sequenceDiagram
     end
 ```
 
-**Benefits:**
-- Prevents overcomputation when sufficient data is collected
-- Maintains training quality by tracking completion validity
-- Reduces resource waste through intelligent task cancellation
-
-### 2. Global Load Balancing
+### 3. Global Load Balancing
 
 The Global Load Balancer implements sophisticated server allocation strategies to maximize resource utilization and minimize request latency.
 
@@ -138,38 +140,18 @@ def get_server_index():
     min_load_server = min(servers, key=lambda s: s.current_load)
     min_load_server.current_load += 1
     return min_load_server.index
+
+# Update the server load after a task is completed
+def release_server_index(server_index):
+    current_loads[server_index] -= 1
+    semaphore.release()
 ```
 
-#### Least Connection Algorithm
-```mermaid
-graph LR
-    subgraph "Load Balancer"
-        LB[Load Balancer]
-        H[Min-Heap]
-    end
-    
-    subgraph "Servers"
-        S1["Server 1<br/>Load: 5"]
-        S2["Server 2<br/>Load: 3"]
-        S3["Server 3<br/>Load: 7"]
-    end
-    
-    LB --> H
-    H --> S2
-    
-    style S2 fill:#90EE90
-    style S1 fill:#FFE4E1
-    style S3 fill:#FFE4E1
-```
+### 4. Dynamic Task Management
 
-**Features:**
-- **Capacity Control**: Prevents server overload through semaphore-based limits
-- **Load Distribution**: Uses min-heap for efficient least-loaded server selection
-- **Session Affinity**: LRU cache maintains request-to-server mapping for consistency
+Each AgentLoopWorker first creates rollout tasks for max_concurrent_prompts number of prompts, then creates a rollout task for the next prompt only when one prompt completes generation.
 
-### 3. Dynamic Task Management
-
-Dynamic task creation optimizes memory usage and provides responsive processing through adaptive concurrency control.
+In this way, FIFO control is implemented on the task sending side, so that the N response generation tasks for each prompt are completed at approximately the same time, followed by subsequent reward calculation and filtering. Otherwise, multiple prompts might only complete partial response generation and block subsequent processing.
 
 **Task Lifecycle Management:**
 
@@ -183,7 +165,7 @@ stateDiagram-v2
     Cancelled --> [*]
     Completed --> [*]: No More Pending
     
-    note right of Running: Max concurrent tasks configurable limit
+    note right of Running: Max concurrent tasks  configurable limit
 ```
 
 **Implementation Details:**
@@ -214,11 +196,6 @@ while pending_tasks:
         if pending_prompts and not early_stop_triggered:
             create_new_task()
 ```
-
-**Advantages:**
-- **Memory Efficiency**: Prevents memory overflow from excessive concurrent tasks
-- **Responsive Processing**: Immediate task creation upon completion
-- **Adaptive Scaling**: Automatically adjusts to available resources
 
 ## Experiments
 
