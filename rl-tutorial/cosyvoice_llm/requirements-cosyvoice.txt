@@ -27,3 +27,5 @@ sherpa_onnx
 jiwer
 zhon
 numpy==1.25.2
+pypinyin
+openai-whisper
