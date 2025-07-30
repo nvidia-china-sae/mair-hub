@@ -197,6 +197,67 @@ while pending_tasks:
             create_new_task()
 ```
 
+## Data Flow Overview
+
+```mermaid
+sequenceDiagram
+    participant Client as Client/Trainer
+    participant ALM as Agent Loop Manager
+    participant ESC as Early Stopping Coordinator
+    participant GLB as Global Load Balancer
+    participant ALW as Agent Loop Worker
+    participant ASM as Async Server Manager
+    participant AS as Async LLM Server
+    
+    Note over Client,AS: Async DAPO Data Flow
+    
+    Client->>ALM: Input prompts batch
+    ALM->>ESC: Initialize(expected_prompt_num)
+    ALM->>GLB: Reset load balancer
+    ALM->>ALM: Split batch by prompt_index
+    
+    loop For each worker
+        ALM->>ALW: Assign prompt groups
+    end
+    
+    par Worker Processing
+        loop Dynamic Task Creation
+            ALW->>ALW: Create rollout tasks (max_concurrent_prompts)
+            
+            loop For each prompt
+                ALW->>ESC: Check should_stop_generation()
+                alt Continue processing
+                    ALW->>ASM: Send generation request
+                    ASM->>GLB: Get vllm server index
+                    GLB-->>ASM: Return vllm server index with min load
+                    ASM->>AS: Generate with cancellation
+                    AS-->>ASM: Generated response
+                    ASM->>GLB: Release server index
+                    ASM-->>ALW: Return response
+                    ALW->>ALW: Compute reward & filter
+                    ALW->>ESC: Report completion(prompt_index, is_valid)
+                    ESC->>ESC: Check if the valid prompts of the expected number have been collected.
+                else Early stop triggered
+                    ESC-->>ALW: should_stop_generation() = True
+                    ALW->>ALW: Cancel pending tasks
+                end
+            end
+        end
+    and Early Stopping Coordination
+        ESC->>ESC: Track completed prompts
+        alt Target reached
+            ESC->>ALW: Broadcast stop signal
+        end
+    end
+    
+    ALW-->>ALM: Return processed outputs
+    ALM->>ALM: Merge all worker outputs
+    ALM-->>Client: Final output with metrics
+    
+    Note over Client,AS: Early stopping enables efficient resource utilization
+```
+
+
 ## Experiments
 
 The `test_qwen3_8b.sh` script is just a simple example to show how to use this async DAPO recipe.
