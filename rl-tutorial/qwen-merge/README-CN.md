@@ -81,12 +81,14 @@ python3 src/model_merge/model_merger.py \
 本项目所使用的数据均来自开源数据集。训练分为三个阶段：
 
 **第一阶段和第二阶段（模态对齐阶段）**：
+
 - 第一阶段对齐projector，使用图像-文本Caption数据
 - 第二阶段对齐ViT-LLM，分两步进行多模态对齐
 
 第一阶段使用[LLaVA-ReCap-558K](https://huggingface.co/datasets/lmms-lab/LLaVA-ReCap-558K)数据集。第二阶段分为两个步骤：第一步使用[LLaVA-ReCap-CC3M](https://huggingface.co/datasets/lmms-lab/LLaVA-ReCap-CC3M)和[LLaVA-ReCap-CC12M](https://huggingface.co/datasets/lmms-lab/LLaVA-ReCap-CC12M)字幕数据，以及[synthdog-en](https://huggingface.co/datasets/naver-clova-ix/synthdog-en)和[synthdog-zh](https://huggingface.co/datasets/naver-clova-ix/synthdog-zh)OCR数据进行模态对齐；第二步使用[LLaVA-OneVision](https://huggingface.co/datasets/lmms-lab/LLaVA-OneVision-Data)多样化的通用数据进行模型对齐。
 
 **第三阶段（指令微调阶段）**：
+
 我们通过双重蒸馏策略提升模型的推理能力，数据构建从两方面进行：一方面从Qwen3-32B蒸馏文本推理数据，将文本问题转化为图片形式；另一方面从多模态推理模型蒸馏结果，规范多模态推理过程。具体流程如训练方法图所示。
 
 <img src="./assets/data_distillation.png">

@@ -80,12 +80,14 @@ This command concatenates the vision Transformer (ViT) of Qwen2.5-VL with the la
 All data used in this project comes from open-source datasets. Training is divided into three stages:
 
 **Stage 1 and Stage 2 (Modal Alignment Stage)**:
+
 - Stage 1 aligns the projector using image-text caption data
 - Stage 2 aligns ViT-LLM in two steps for multimodal alignment
 
 Stage 1 uses the [LLaVA-ReCap-558K](https://huggingface.co/datasets/lmms-lab/LLaVA-ReCap-558K) dataset. Stage 2 is divided into two steps: the first step uses [LLaVA-ReCap-CC3M](https://huggingface.co/datasets/lmms-lab/LLaVA-ReCap-CC3M) and [LLaVA-ReCap-CC12M](https://huggingface.co/datasets/lmms-lab/LLaVA-ReCap-CC12M) caption data, as well as [synthdog-en](https://huggingface.co/datasets/naver-clova-ix/synthdog-en) and [synthdog-zh](https://huggingface.co/datasets/naver-clova-ix/synthdog-zh) OCR data for modal alignment; the second step uses [LLaVA-OneVision](https://huggingface.co/datasets/lmms-lab/LLaVA-OneVision-Data) diverse general data for model alignment.
 
 **Stage 3 (Instruct Fine-Tuning Stage)**:
+
 We enhance the model's reasoning capabilities through a dual-distillation strategy. Data construction is conducted from two aspects: on one hand, distilling text reasoning data from Qwen3-32B by converting text problems into image format; on the other hand, distilling results from multimodal reasoning models to standardize the multimodal reasoning process. The specific process is shown in the training method figure.
 
 <img src="./assets/data_distillation.png">
