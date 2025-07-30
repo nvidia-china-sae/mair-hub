@@ -1,0 +1,45 @@
+### model
+model_name_or_path: ./outputs/Qwen-Merge-VL-4B-stage2.1
+image_max_pixels: 262144
+video_max_pixels: 16384
+trust_remote_code: true
+
+### method
+stage: sft
+do_train: true
+finetuning_type: full
+freeze_vision_tower: true
+freeze_multi_modal_projector: false
+freeze_language_model: false
+deepspeed: examples/deepspeed/ds_z3_config.json
+
+### dataset
+dataset: CLEVR_Math_MathV360K,FigureQA_MathV360K,GEOS_MathV360K,GeoQA+_MathV360K,Geometry3K_MathV360K,IconQA_MathV360K,MapQA_MathV360K,MathV360K_TQA,MathV360K_VQA_AS,MathV360K_VQA_RAD,PMC_VQA_MathV360K,Super_CLEVR_MathV360K,TabMWP_MathV360K,UniGeo_MathV360K,VisualWebInstruct_filtered,VizWiz_MathV360K,ai2d_cauldron_llava_format,ai2d_gpt4v,ai2d_internvl,allava_instruct_laion4v,allava_instruct_vflan4v,aokvqa_cauldron_llava_format,chart2text_cauldron,chartqa_cauldron_llava_format,chrome_writting,clevr_cauldron_llava_format,diagram_image_to_text_cauldron,dvqa_cauldron_llava_format,figureqa_cauldron_llava_format,geo170k_align,geo170k_qa,geo3k,geomverse_cauldron,hateful_memes_cauldron_llava_format,hitab_cauldron_llava_format,hme100k,iam_cauldron,iconqa_cauldron_llava_format,iiit5k,image_textualization_filtered,infographic_gpt4v,infographic_vqa,infographic_vqa_llava_format,intergps_cauldron_llava_format,k12_printing,llava_wild_4v_12k_filtered,llava_wild_4v_39k_filtered,llavar_gpt4_20k,lrv_chart,lrv_normal_filtered,mapqa_cauldron_llava_format,mavis_math_metagen,mavis_math_rule_geo,multihiertt_cauldron,orand_car_a,raven_cauldron,rendered_text_cauldron,robut_sqa_cauldron,robut_wikisql_cauldron,robut_wtq_cauldron_llava_format,scienceqa_cauldron_llava_format,scienceqa_nona_context,screen2words_cauldron,sharegpt4o,sharegpt4v_coco,sharegpt4v_knowledge,sharegpt4v_llava,sharegpt4v_sam,sroie,st_vqa_cauldron_llava_format,tabmwp_cauldron,tallyqa_cauldron_llava_format,textcaps,textocr_gpt4v,tqa_cauldron_llava_format,ureader_cap,ureader_ie,vision_flan_filtered,vistext_cauldron,visual7w_cauldron_llava_format,visualmrc_cauldron,vqarad_cauldron_llava_format,vsr_cauldron_llava_format,websight_cauldron
+template: qwen_merge_vl_pt
+cutoff_len: 8096
+overwrite_cache: true
+preprocessing_num_workers: 64
+dataloader_num_workers: 64
+tokenized_path: save/4b_pt_stage2.2_tokenized
+
+### output
+output_dir: ./outputs/Qwen-Merge-VL-4B-stage2.2
+logging_steps: 1
+save_steps: 200
+save_total_limit: 10
+save_strategy: 'steps'
+plot_loss: true
+overwrite_output_dir: true
+save_only_model: false
+report_to: wandb  # choices: [none, wandb, tensorboard, swanlab, mlflow]
+run_name: Qwen-Merge-VL-4B-stage2.2
+
+### train
+per_device_train_batch_size: 8
+gradient_accumulation_steps: 8
+learning_rate: 5.0e-5
+num_train_epochs: 1.2
+lr_scheduler_type: cosine
+warmup_ratio: 0.05
+bf16: true
+ddp_timeout: 180000000
