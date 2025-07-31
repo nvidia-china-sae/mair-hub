@@ -5,6 +5,7 @@
 ## 📋 目录
 
 - [任务介绍](#-任务介绍)
+- [代码配置](#-代码配置)
 - [数据准备](#️-数据准备)
 - [工具定义](#-工具定义)
   - [工具 Schema](#工具-schema)
@@ -43,6 +44,22 @@
 
 ---
 
+## 💻 代码配置
+首先，需要下载指定commit 的veRL代码。
+```bash
+git clone https://github.com/volcengine/verl
+cd verl
+# !IMPORTANT: checkout the commit, otherwise there may be incompatibility issues
+git checkout 9d7cba4e1269d18565f1bcdba172c600db481c14
+cd ..
+```
+
+在准备好veRL代码后，运行下面的脚本将代码移动到指定位置
+```bash
+sh mv_to_dest.sh
+```
+
+
 ## 🗄️ 数据准备
 
 ### 📥 数据集下载
@@ -71,7 +88,7 @@ huggingface-cli download seeklhy/OmniSQL-datasets data.zip \
 下载数据集后，执行预处理脚本：
 
 ```bash
-python examples/data_preprocess/preprocess_sql_dataset.py \
+python recipe/text2sql/preprocess_sql_dataset.py \
   --input_file input_file_path \
   --local_dir output_file_path \
   --db_root_path path_to_OmniSQL_data
@@ -110,7 +127,7 @@ DEFAULT_SYSTEM_CONTENT = (
 
 ### 工具 Schema
 
-veRL 中可以使用 YAML 文件定义工具，包含工具的输入、输出等字段信息。在 `examples/sglang_multiturn/config/tool_config/sql_tool_config.yaml` 中，我们定义了 SQL 执行工具：
+veRL 中可以使用 YAML 文件定义工具，包含工具的输入、输出等字段信息。在 `recipe/text2sql/config/tool_config/sql_tool_config.yaml` 中，我们定义了 SQL 执行工具：
 
 ```yaml
 tools:
@@ -180,7 +197,7 @@ tools:
 
 ### 📁 实现细节
 
-关于 Text2SQL 奖励函数的具体实现，请参考 `verl/utils/reward_score/text2sql.py`。
+关于 Text2SQL 奖励函数的具体实现，请参考 `recipe/text2sql/text2sql_reward_func.py`。
 
 ---
 
@@ -199,7 +216,7 @@ tools:
 
 ### 启动训练
 
-训练脚本位于 `examples/sglang_multiturn/run_qwen2.5-7b_text2sql.sh` 文件中。您可以参考该脚本进行训练。
+训练脚本位于 `recipe/text2sql/run_qwen2.5-7b_text2sql.sh` 文件中。您可以参考该脚本进行训练。
 
 ### 训练曲线
 
@@ -481,7 +498,7 @@ python -m main_eval \
 考虑到线上应用时，对于没有生成最终答案的对话，一般会再次请求模型，尽可能生成最终答案。为了保证线上应用和训练时的一致性，我们在训练时添加了一个**最终总结**机制，对于没有生成结果的对话进行总结，并尝试生成一个最终答案。
 
 
-训练脚本参考：`examples/sglang_multiturn/run_qwen2.5-7b_text2sql_final_summary.sh`
+训练脚本参考：`exrecipe/text2sql/run_qwen2.5-7b_text2sql_final_summary.sh`
 
 该脚本通过设置 `final_summary` 为 `true` 来启用此功能。
 

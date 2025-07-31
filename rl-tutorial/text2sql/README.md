@@ -5,6 +5,7 @@ In this tutorial, we will introduce how to use the veRL framework for multi-turn
 ## 📋 Table of Contents
 
 - [Task Introduction](#-task-introduction)
+- [Code Configuration](#-code-configuration)
 - [Data Preparation](#️-data-preparation)
 - [Tool Definition](#-tool-definition)
   - [Tool Schema](#tool-schema)
@@ -43,6 +44,21 @@ This capability is particularly suitable for handling complex scenarios and open
 
 ---
 
+## 💻 Code Configuration
+First, you need to download the veRL code from the specified commit.
+```bash
+git clone https://github.com/volcengine/verl
+cd verl
+# !IMPORTANT: checkout the commit, otherwise there may be incompatibility issues
+git checkout 9d7cba4e1269d18565f1bcdba172c600db481c14
+cd ..
+```
+
+After preparing the veRL code, run the following script to move the code to the specified locations:
+```bash
+sh mv_to_dest.sh
+```
+
 ## 🗄️ Data Preparation
 
 ### 📥 Dataset Download
@@ -71,7 +87,7 @@ huggingface-cli download seeklhy/OmniSQL-datasets data.zip \
 After downloading the dataset, execute the preprocessing script:
 
 ```bash
-python examples/data_preprocess/preprocess_sql_dataset.py \
+python recipe/text2sql/preprocess_sql_dataset.py \
   --input_file input_file_path \
   --local_dir output_file_path \
   --db_root_path path_to_OmniSQL_data
@@ -110,7 +126,7 @@ This section introduces how to configure new tools using the veRL framework, mai
 
 ### Tool Schema
 
-In veRL, you can use YAML files to define tools, including input and output field information. In `examples/sglang_multiturn/config/tool_config/sql_tool_config.yaml`, we define the SQL execution tool:
+In veRL, you can use YAML files to define tools, including input and output field information. In `recipe/text2sql/config/tool_config/sql_tool_config.yaml`, we define the SQL execution tool:
 
 ```yaml
 tools:
@@ -180,7 +196,7 @@ This section introduces the reward function mechanism we defined for the Text2SQ
 
 ### 📁 Implementation Details
 
-For specific implementation of the Text2SQL reward function, please refer to `verl/utils/reward_score/text2sql.py`.
+For specific implementation of the Text2SQL reward function, please refer to `recipe/text2sql/text2sql_reward_func.py`.
 
 ---
 
@@ -199,7 +215,7 @@ This section introduces key parameters related to multi-turn training in veRL:
 
 ### Starting Training
 
-The training script is located in the `examples/sglang_multiturn/run_qwen2.5-7b_text2sql.sh` file. You can refer to this script for training.
+The training script is located in the `recipe/text2sql/run_qwen2.5-7b_text2sql.sh` file. You can refer to this script for training.
 
 ### Training Curves
 
@@ -479,7 +495,7 @@ During model training, a maximum number of request turns is set. When the reques
 
 Considering that in online applications, for conversations that do not generate a final answer, the model is generally requested again to generate a final answer as much as possible. To ensure consistency between online applications and training, we added a **final summary** mechanism during training to summarize conversations that do not generate results and attempt to generate a final answer.
 
-Training script reference: `examples/sglang_multiturn/run_qwen2.5-7b_text2sql_final_summary.sh`
+Training script reference: `recipe/text2sql/run_qwen2.5-7b_text2sql_final_summary.sh`
 
 This script enables this functionality by setting `final_summary` to `true`.
 
