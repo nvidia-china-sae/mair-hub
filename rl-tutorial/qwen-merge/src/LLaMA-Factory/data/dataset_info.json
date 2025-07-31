@@ -1,0 +1,1276 @@
+{
+    "LLaVA_ReCap_CC3M": {
+        "file_name": "./LLaVA_ReCap_CC3M.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "LLaVA_ReCap_558K": {
+        "file_name": "./LLaVA_ReCap_558K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "LLaVA_ReCap_CC12M": {
+        "file_name": "./LLaVA_ReCap_CC12M.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "synthdog_zh": {
+        "file_name": "./synthdog_zh.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "synthdog_en": {
+        "file_name": "./synthdog_en.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "CLEVR_Math_MathV360K": {
+        "file_name": "./llavaonevision_converted/CLEVR_Math_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "FigureQA_MathV360K": {
+        "file_name": "./llavaonevision_converted/FigureQA_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "GEOS_MathV360K": {
+        "file_name": "./llavaonevision_converted/GEOS_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "GeoQA+_MathV360K": {
+        "file_name": "./llavaonevision_converted/GeoQA+_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "Geometry3K_MathV360K": {
+        "file_name": "./llavaonevision_converted/Geometry3K_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "IconQA_MathV360K": {
+        "file_name": "./llavaonevision_converted/IconQA_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "MapQA_MathV360K": {
+        "file_name": "./llavaonevision_converted/MapQA_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "MathV360K_TQA": {
+        "file_name": "./llavaonevision_converted/MathV360K_TQA.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "MathV360K_VQA_AS": {
+        "file_name": "./llavaonevision_converted/MathV360K_VQA_AS.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "MathV360K_VQA_RAD": {
+        "file_name": "./llavaonevision_converted/MathV360K_VQA_RAD.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "PMC_VQA_MathV360K": {
+        "file_name": "./llavaonevision_converted/PMC_VQA_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "Super_CLEVR_MathV360K": {
+        "file_name": "./llavaonevision_converted/Super_CLEVR_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "TabMWP_MathV360K": {
+        "file_name": "./llavaonevision_converted/TabMWP_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "UniGeo_MathV360K": {
+        "file_name": "./llavaonevision_converted/UniGeo_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "VisualWebInstruct_filtered": {
+        "file_name": "./llavaonevision_converted/VisualWebInstruct_filtered.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "VizWiz_MathV360K": {
+        "file_name": "./llavaonevision_converted/VizWiz_MathV360K.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "ai2d_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/ai2d_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "ai2d_gpt4v": {
+        "file_name": "./llavaonevision_converted/ai2d_gpt4v.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "ai2d_internvl": {
+        "file_name": "./llavaonevision_converted/ai2d_internvl.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "allava_instruct_laion4v": {
+        "file_name": "./llavaonevision_converted/allava_instruct_laion4v.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "allava_instruct_vflan4v": {
+        "file_name": "./llavaonevision_converted/allava_instruct_vflan4v.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "aokvqa_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/aokvqa_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "chart2text_cauldron": {
+        "file_name": "./llavaonevision_converted/chart2text_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "chartqa_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/chartqa_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "chrome_writting": {
+        "file_name": "./llavaonevision_converted/chrome_writting.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "clevr_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/clevr_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "diagram_image_to_text_cauldron": {
+        "file_name": "./llavaonevision_converted/diagram_image_to_text_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "dvqa_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/dvqa_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "figureqa_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/figureqa_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "geo170k_align": {
+        "file_name": "./llavaonevision_converted/geo170k_align.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "geo170k_qa": {
+        "file_name": "./llavaonevision_converted/geo170k_qa.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "geo3k": {
+        "file_name": "./llavaonevision_converted/geo3k.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "geomverse_cauldron": {
+        "file_name": "./llavaonevision_converted/geomverse_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "hateful_memes_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/hateful_memes_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "hitab_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/hitab_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "hme100k": {
+        "file_name": "./llavaonevision_converted/hme100k.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "iam_cauldron": {
+        "file_name": "./llavaonevision_converted/iam_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "iconqa_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/iconqa_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "iiit5k": {
+        "file_name": "./llavaonevision_converted/iiit5k.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "image_textualization_filtered": {
+        "file_name": "./llavaonevision_converted/image_textualization_filtered.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "infographic_gpt4v": {
+        "file_name": "./llavaonevision_converted/infographic_gpt4v.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "infographic_vqa": {
+        "file_name": "./llavaonevision_converted/infographic_vqa.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "infographic_vqa_llava_format": {
+        "file_name": "./llavaonevision_converted/infographic_vqa_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "intergps_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/intergps_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "k12_printing": {
+        "file_name": "./llavaonevision_converted/k12_printing.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "llava_wild_4v_12k_filtered": {
+        "file_name": "./llavaonevision_converted/llava_wild_4v_12k_filtered.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "llava_wild_4v_39k_filtered": {
+        "file_name": "./llavaonevision_converted/llava_wild_4v_39k_filtered.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "llavar_gpt4_20k": {
+        "file_name": "./llavaonevision_converted/llavar_gpt4_20k.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "lrv_chart": {
+        "file_name": "./llavaonevision_converted/lrv_chart.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "lrv_normal_filtered": {
+        "file_name": "./llavaonevision_converted/lrv_normal_filtered.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "mapqa_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/mapqa_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "mavis_math_metagen": {
+        "file_name": "./llavaonevision_converted/mavis_math_metagen.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "mavis_math_rule_geo": {
+        "file_name": "./llavaonevision_converted/mavis_math_rule_geo.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "multihiertt_cauldron": {
+        "file_name": "./llavaonevision_converted/multihiertt_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "orand_car_a": {
+        "file_name": "./llavaonevision_converted/orand_car_a.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "raven_cauldron": {
+        "file_name": "./llavaonevision_converted/raven_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "rendered_text_cauldron": {
+        "file_name": "./llavaonevision_converted/rendered_text_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "robut_sqa_cauldron": {
+        "file_name": "./llavaonevision_converted/robut_sqa_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "robut_wikisql_cauldron": {
+        "file_name": "./llavaonevision_converted/robut_wikisql_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "robut_wtq_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/robut_wtq_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "scienceqa_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/scienceqa_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "scienceqa_nona_context": {
+        "file_name": "./llavaonevision_converted/scienceqa_nona_context.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "screen2words_cauldron": {
+        "file_name": "./llavaonevision_converted/screen2words_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "sharegpt4o": {
+        "file_name": "./llavaonevision_converted/sharegpt4o.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "sharegpt4v_coco": {
+        "file_name": "./llavaonevision_converted/sharegpt4v_coco.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "sharegpt4v_knowledge": {
+        "file_name": "./llavaonevision_converted/sharegpt4v_knowledge.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "sharegpt4v_llava": {
+        "file_name": "./llavaonevision_converted/sharegpt4v_llava.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "sharegpt4v_sam": {
+        "file_name": "./llavaonevision_converted/sharegpt4v_sam.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "sroie": {
+        "file_name": "./llavaonevision_converted/sroie.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "st_vqa_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/st_vqa_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "tabmwp_cauldron": {
+        "file_name": "./llavaonevision_converted/tabmwp_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "tallyqa_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/tallyqa_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "textcaps": {
+        "file_name": "./llavaonevision_converted/textcaps.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "textocr_gpt4v": {
+        "file_name": "./llavaonevision_converted/textocr_gpt4v.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "tqa_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/tqa_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "ureader_cap": {
+        "file_name": "./llavaonevision_converted/ureader_cap.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "ureader_ie": {
+        "file_name": "./llavaonevision_converted/ureader_ie.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "vision_flan_filtered": {
+        "file_name": "./llavaonevision_converted/vision_flan_filtered.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "vistext_cauldron": {
+        "file_name": "./llavaonevision_converted/vistext_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "visual7w_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/visual7w_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "visualmrc_cauldron": {
+        "file_name": "./llavaonevision_converted/visualmrc_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "vqarad_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/vqarad_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "vsr_cauldron_llava_format": {
+        "file_name": "./llavaonevision_converted/vsr_cauldron_llava_format.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "websight_cauldron": {
+        "file_name": "./llavaonevision_converted/websight_cauldron.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "text2image": {
+        "file_name": "./text2image.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    },
+    "image_thinking": {
+        "file_name": "./image_thinking.parquet",
+        "formatting": "sharegpt",
+        "columns": {
+            "messages": "messages",
+            "images": "images"
+        },
+        "tags": {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant"
+        }
+    }
+}

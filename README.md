@@ -21,6 +21,8 @@ The [rl-tutorial](./rl-tutorial/) directory contains resources focused on reinfo
 - [vlm-R1](./rl-tutorial/vlm-R1/): Tutorial of using the veRL framework to train VLM models with reinforcement learning using both text and multimodal data to enhance reasoning capabilities in the mathematics domain.
 - [cosyvoice_llm](./rl-tutorial/cosyvoice_llm/): A training recipe for using the veRL framework to conduct reinforcement learning experiments on the CosyVoice2 LLM in the speech-generation domain.
 - [kdd_labs](./rl-tutorial/kdd_labs/): Hands-on labs for KDD 2025 Tutorial session, including distilling reasoning abilities from DeepSeek-R1 into smaller models using NeMo 2.0 Framework and GRPO training tutorial using NeMo RL tutorials.
+- [qwen-merge](./rl-tutorial/qwen-merge/): A training recipe for creating multimodal reasoning models by concatenating vision encoders from Qwen2.5-VL with Qwen3.
+- [async_dapo](./rl-tutorial/async_dapo/): An efficient asynchronous training recipe using the veRL framework with AgentLoop async rollout functionality and DAPO algorithm for reinforcement learning experiments on the mathematics domain. Features early stopping mechanisms, dynamic load balancing, and seamless reward computation for enhanced training efficiency.
 
 ### Speech-LLM
 

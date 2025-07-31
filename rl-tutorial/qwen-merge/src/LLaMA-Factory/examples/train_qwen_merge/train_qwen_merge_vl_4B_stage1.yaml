@@ -1,0 +1,45 @@
+### model
+model_name_or_path: ../Qwen-Merge-VL-4B-base
+image_max_pixels: 262144
+video_max_pixels: 16384
+trust_remote_code: true
+
+### method
+stage: sft
+do_train: true
+finetuning_type: full
+freeze_vision_tower: true
+freeze_multi_modal_projector: false
+freeze_language_model: true
+deepspeed: examples/deepspeed/ds_z3_config.json
+
+### dataset
+dataset: LLaVA_ReCap_558K
+template: qwen_merge_vl_pt
+cutoff_len: 8096
+overwrite_cache: true
+preprocessing_num_workers: 64
+dataloader_num_workers: 64
+tokenized_path: save/4b_pt_stage1_tokenized
+
+### output
+output_dir: ./outputs/Qwen-Merge-VL-4B-stage1
+logging_steps: 1
+save_steps: 200
+save_total_limit: 10
+save_strategy: 'steps'
+plot_loss: true
+overwrite_output_dir: true
+save_only_model: false
+report_to: wandb  # choices: [none, wandb, tensorboard, swanlab, mlflow]
+run_name: Qwen-Merge-VL-4B-stage1
+
+### train
+per_device_train_batch_size: 8
+gradient_accumulation_steps: 4
+learning_rate: 5.0e-4
+num_train_epochs: 5.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.05
+bf16: true
+ddp_timeout: 180000000
