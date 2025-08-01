@@ -1,0 +1,21 @@
+# Text2SQL 评估系统依赖项
+
+# 核心依赖
+aiohttp>=3.8.0
+pandas>=1.5.0
+pathlib>=1.0.0
+
+# 可选依赖
+func_timeout>=4.3.5
+
+# Python标准库（无需安装，仅作文档说明）
+# sqlite3
+# json
+# logging
+# re
+# asyncio
+# argparse
+# time
+# datetime
+# statistics
+# multiprocessing 

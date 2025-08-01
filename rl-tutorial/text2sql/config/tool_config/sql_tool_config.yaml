@@ -1,0 +1,36 @@
+tools:
+  - class_name: "verl.tools.sql_tool.SqlTool"
+    config:
+      # 数据库根路径，包含所有数据集的数据库文件
+      db_root_path: "/apps/data/OmniSQL-datasets/data/"
+      
+      # 并发控制配置
+      num_workers: 60                    # Ray worker 数量
+      rate_limit: 60                     # 每秒最大请求数
+      timeout: 30                        # SQL 执行超时时间（秒）
+      num_cpus: 32                       # 并行 SQL 执行的 CPU 数量
+      type: native
+      # 结果截断配置
+      max_result_chars: 9000             # 结果字符数截断
+      max_result_rows: 50                 # 结果行数截断
+      
+      # 全局限流配置
+      enable_global_rate_limit: true     # 是否启用全局限流
+      
+      # 日志配置
+      enable_logging: true               # 是否启用执行日志
+      log_dir: "/apps/logs/sql_execution" # 日志存储目录
+      
+    tool_schema:
+      type: function
+      function:
+        name: execute_sql
+        description: Executes SQL queries and returns the results.
+        parameters:
+          type: object
+          properties:
+            sql_query:
+              type: string
+              description: "SQL query to be executed"
+          required: 
+            - sql_query
