@@ -1,3 +1,4 @@
+# Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
 # Copyright 2023-2024 SGLang Team
 # Copyright 2025 ModelBest Inc. and/or its affiliates
 # Copyright 2024 Bytedance Ltd. and/or its affiliates
@@ -411,6 +412,9 @@ class SGLangRollout(BaseRollout):
             self.config.multi_turn.max_assistant_turns = self.config.max_model_len // 3
         if self.config.multi_turn.max_user_turns is None:
             self.config.multi_turn.max_user_turns = self.config.max_model_len // 3
+
+        if self.config.multi_turn.final_summary is None:
+            self.config.multi_turn.final_summary = False
 
     def _init_inference_engine(self, trust_remote_code, actor_module, port):
         # initialize the inference engine
