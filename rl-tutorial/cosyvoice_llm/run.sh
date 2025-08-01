@@ -53,21 +53,24 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
   # If you would like to use the official CosyVoice2-0.5B LLM and do RL training, please see run_official.sh
 fi
 
-data_dir=data/parquet_emilia_zh
+data_dir=data/parquet_emilia_zh_en_removed
+# data_dir=data/parquet_emilia_zh_en_removed_prefix_speech
+# data_dir=data/parquet_aishell3
 if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
   log "stage 0: prepare data into verl format"
   # yuekai/llasa_cosyvoice2_token_qwen_0.5b is the emilia zh trained model, please set use_custom_template=True to use the custom template
   # yuekai/cosyvoice2_llm is the official cosyvoice2 llm model, please set use_custom_template=False to use the official template
   mkdir -p $data_dir
   python prepare_data.py \
-    --train_file data/emilia_zh-cosy-zh-filtered.jsonl \
+    --train_file data/emilia_zh-cosy-zh-filtered-en-removed.jsonl \
     --test_file data/emilia_test.jsonl \
     --local_dir $data_dir
 fi
 
+n_gpus=8
 if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
   log "stage 1: start token2wav asr server for reward function"
-  python3 token2wav_asr_server.py --number-of-devices 8
+  python3 token2wav_asr_server.py --number-of-devices $n_gpus
 
   # log "Test the reward server"
   # python3 reward_tts.py \
@@ -79,12 +82,16 @@ if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
 fi 
 
 sft_model_path=/workspace/rl/llasa_cosyvoice2_token_qwen_0.5b/checkpoint-885000
-
+exp_name=emilia_zh_en_removed_prefix_speech
+exp_name=emilia_zh_en_removed_test_grad_norm
+exp_name=aishell3_fix_template
+exp_name=emilia_zh_en_removed_scale_10
 if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
   log "stage 2: grpo train"
+  # wandb login
   export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
   export MKL_SERVICE_FORCE_INTEL=TRUE
-  n_gpus_per_node=8
+  n_gpus_per_node=$n_gpus
   micro_batch_size=4
   train_batch_size=32
   python3 -m verl.trainer.main_ppo \
@@ -93,7 +100,7 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
       data.val_files=$data_dir/test.parquet \
       data.train_batch_size=$train_batch_size \
       data.max_prompt_length=1024 \
-      data.max_response_length=512 \
+      data.max_response_length=1024 \
       data.truncation='error' \
       actor_rollout_ref.model.use_remove_padding=True \
       actor_rollout_ref.model.path=$sft_model_path \
@@ -110,18 +117,16 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
       actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
       actor_rollout_ref.rollout.do_sample=true \
       actor_rollout_ref.rollout.temperature=0.8 \
-      actor_rollout_ref.rollout.top_p=0.95 \
-      actor_rollout_ref.rollout.top_k=50 \
+      actor_rollout_ref.rollout.top_p=0.9 \
       actor_rollout_ref.rollout.n=4 \
       actor_rollout_ref.rollout.val_kwargs.do_sample=true \
       actor_rollout_ref.rollout.val_kwargs.temperature=0.8 \
-      actor_rollout_ref.rollout.val_kwargs.top_p=0.95 \
-      actor_rollout_ref.rollout.val_kwargs.top_k=50 \
+      actor_rollout_ref.rollout.val_kwargs.top_p=0.9 \
       reward_model.reward_manager=prime \
       custom_reward_function.path=reward_tts.py \
       custom_reward_function.name=compute_score \
       trainer.project_name='llasa_tts_grpo' \
-      trainer.experiment_name='emilia_zh' \
+      trainer.experiment_name=${exp_name} \
       trainer.logger=['console','wandb'] \
       trainer.n_gpus_per_node=$n_gpus_per_node \
       trainer.nnodes=1 \
@@ -132,8 +137,9 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
       trainer.val_before_train=False
 fi
 
-step=1600
-llm_path=./checkpoints/llasa_tts_grpo/emilia_zh/global_step_${step}
+step=200
+
+llm_path=./checkpoints/llasa_tts_grpo/${exp_name}/global_step_${step}
 if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
   log "stage 3: merge the model"
   python -m verl.model_merger merge \
@@ -141,16 +147,16 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
       --local_dir $llm_path/actor \
       --target_dir $llm_path/merged_hf_model || exit 1
     
-fi 
+fi
+
+token2wav_path=/workspace/CosyVoice2-0.5B
+model_path=$llm_path/merged_hf_model
 if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
   log "stage 4: Test the model"
   datasets=(zero_shot_zh test_zh)
+  datasets=(zero_shot_zh)
   for dataset in ${datasets[@]}; do
-  output_dir=./outputs_rl_emilia_zh_step${step}_${dataset}
-
-  token2wav_path=/workspace/CosyVoice2-0.5B
-  model_path=$llm_path/merged_hf_model
-
+  output_dir=./outputs_rl_${exp_name}_step${step}_${dataset}
   CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
   torchrun --nproc_per_node=8 \
       infer_dataset.py \

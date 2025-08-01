@@ -132,8 +132,8 @@ The script synthesizes a tongue-twister using the merged checkpoint and prints t
 | Model                                                 | Seed-TTS `test_zh` CER | Cosyvoice3 `zero_shot_zh` |Comment                                                                        |
 |-|------------------------------------------------------|------------------------|--------------------------------------------------------------------------------|
 | Official CosyVoice2 LLM                               | 1.45 %             |4.08%| See the [paper](https://arxiv.org/abs/2412.10117)                              |
-| SFT (initialized from Qwen2-0.5B-Instruct)            | 1.81 %                 |4.83%| See [PR #1887](https://github.com/k2-fsa/icefall/pull/1887)                    |
-| GRPO (this work, trained on AIShell-3)                | **1.06 %**             |4.03%|                                                                                |
+| SFT (initialized from Qwen2-0.5B-Instruct)            | 1.70 %                 |4.26%| See [PR #1887](https://github.com/k2-fsa/icefall/pull/1887)                    |
+| GRPO (this work, trained on AIShell-3)                | **1.06 %**             |3.01%| [Commit](https://github.com/nvidia-china-sae/mair-hub/commit/5659ee4d128d5902f2f1a2abb333bdd2e387268d)                                                                               |
 
 ## Acknowledgement
 
