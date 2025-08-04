@@ -169,12 +169,21 @@ python3 run.py --data ${TASK_NAME} --model ${MODEL_NAME} --verbose --use-vllm --
 
 We conducted comprehensive testing on multiple standard multimodal reasoning evaluation tasks, with results shown in the table below:
 
-| Experiments | WorldMed-QA-V | TextVQA | OCRBench | MMVet | AI2D_TEST | ChartQA_TEST | MMStar | MMMU_DEV_VAL | LogicVista | MathVista_MINI  | MathVision_MINI | ScienceQA_VAL | VisOnlyQA |
-|------------|---------------|---------|----------|-------|-----------|--------------|--------|--------------|------------|----------------|-----------------|---------------|-----------|
-| Qwen2.5-VL-3B-Instruct | 29.59 | 79.32 | 82.6 | 35.32 | 78.14 | 83.88 | 56.40 | 49.33 | 39.37 | 61.7 |  21.51 | 79.40 | 38.76 |
-| Qwen2.5-VL-7B-Instruct | 25.70 | 85.36 | 88.2 | 37.75 | 81.06 | 85.96 | 64.27 | 54.00 | 47.43 | 66.5 | 27.30 | 89.46 | 43.34 |
-| Qwen-Merge-VL-4B-stage3 | 29.40 | 68.56 | 74.8 | 25.87 | 76.13 | 65.56 | 60.46 | 54.67 | 47.20 | 45.81 | 28.95 | 91.13 | 43.27 |
-| Qwen-Merge-VL-8B-stage3 | 28.00 | 69.97 | 75.5 | 33.67 | 78.36 | 66.00 | 61.86 | 58.00 | 48.77 | 53.05 | 34.21 | 91.75 | 44.18 |
+| Datasets | Qwen2.5-VL-3B-Instruct | Qwen2.5-VL-7B-Instruct | Qwen-Merge-VL-4B-stage3 | Qwen-Merge-VL-8B-stage3 |
+|----------|------------------------|------------------------|-------------------------|-------------------------|
+| MMStar | 56.40 | 64.27 | 60.46 | 61.86 |
+| MMMU_DEV_VAL | 49.33 | 54.00 | 54.67 | 58.00 |
+| LogicVista | 39.37 | 47.43 | 47.20 | 48.77 |
+| MathVista_MINI | 61.7 | 66.5 | 45.81 | 53.05 |
+| MathVision_MINI | 21.51 | 27.30 | 28.95 | 34.21 |
+| ScienceQA_VAL | 79.40 | 89.46 | 91.13 | 91.75 |
+| VisOnlyQA | 38.76 | 43.34 | 43.27 | 44.18 |
+| WorldMed-QA-V | 29.59 | 25.70 | 29.40 | 28.00 |
+| TextVQA | 79.32 | 85.36 | 68.56 | 69.97 |
+| OCRBench | 82.6 | 88.2 | 74.8 | 75.5 |
+| MMVet | 35.32 | 37.75 | 25.87 | 33.67 |
+| AI2D_TEST | 78.14 | 81.06 | 76.13 | 78.36 |
+| ChartQA_TEST | 83.88 | 85.96 | 65.56 | 66.00 |
 
 ### Performance Analysis
 
