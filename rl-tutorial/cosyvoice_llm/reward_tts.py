@@ -94,8 +94,11 @@ def compute_score(
     """
 
     # Decode token IDs
-    ids = _parse_ids(solution_str)
-
+    if "prefix_speech_str" in extra_info:
+        prefix_speech_str = extra_info["prefix_speech_str"]
+        ids = _parse_ids(prefix_speech_str + solution_str)
+    else:
+        ids = _parse_ids(solution_str)
     # Query remote server for reward
     try:
         reward = _remote_reward(ids, ground_truth)
