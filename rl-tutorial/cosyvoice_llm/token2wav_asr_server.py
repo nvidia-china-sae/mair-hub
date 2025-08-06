@@ -141,6 +141,13 @@ def get_random_prompt_from_dataset(dataset):
     prompt_text = prompt_text.replace(" ", "")
     return prompt_text, prompt_speech_16k
 
+def get_reward_value(c):
+    k_pe = 12
+    exponents = 1.5
+    pow_exp_val = np.exp(-k_pe * c ** exponents)
+    # return 1.0 - np.tanh(3.0 * c)
+    return pow_exp_val
+
 class _Token2Wav_ASR:
     """Wraps a single OmniSenseVoiceSmall model instance for Triton."""
 
@@ -214,24 +221,27 @@ class _Token2Wav_ASR:
             gt_norm = zh_tn_model.normalize(gt_text).lower()
             hyp_norm = zh_tn_model.normalize(hyp_text).lower()
 
-            gt_pinyin = lazy_pinyin(
-                gt_norm,
-                style=Style.TONE3,
-                tone_sandhi=True,
-                neutral_tone_with_five=True,
-            )
-            hyp_pinyin = lazy_pinyin(
-                hyp_norm,
-                style=Style.TONE3,
-                tone_sandhi=True,
-                neutral_tone_with_five=True,
-            )
+            # gt_pinyin = lazy_pinyin(
+            #     gt_norm,
+            #     style=Style.TONE3,
+            #     tone_sandhi=True,
+            #     neutral_tone_with_five=True,
+            # )
+            # hyp_pinyin = lazy_pinyin(
+            #     hyp_norm,
+            #     style=Style.TONE3,
+            #     tone_sandhi=True,
+            #     neutral_tone_with_five=True,
+            # )
+            # don't compute the tone error
+            gt_pinyin = lazy_pinyin(gt_norm)
+            hyp_pinyin = lazy_pinyin(hyp_norm)
 
             c = float(wer(" ".join(gt_pinyin), " ".join(hyp_pinyin)))
-            reward_val = 1.0 - np.tanh(3.0 * c)
+            reward_val = get_reward_value(c)
             reward_val = max(0.0, min(1.0, reward_val))
             rewards.append(reward_val)
-            print(f"gt_text: {gt_text}, hyp_text: {hyp_text}, reward_val: {reward_val}")
+            print(f"gt_text: {gt_norm}, hyp_text: {hyp_norm}, reward_val: {reward_val}")
 
         transcripts = np.char.encode(np.array(texts).reshape(-1, 1), "utf-8")
         rewards_arr = np.array(rewards, dtype=np.float32).reshape(-1, 1)

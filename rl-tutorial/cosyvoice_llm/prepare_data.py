@@ -23,7 +23,12 @@ import datasets
 
 from verl.utils.hdfs_io import copy, makedirs
 
+from typing import List
+import random
 
+def code_to_solution_str(code_list: List[int]) -> str:
+    """Convert code list to solution string format."""
+    return ''.join([f"<|s_{code}|>" for code in code_list])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -31,6 +36,7 @@ if __name__ == "__main__":
     parser.add_argument("--test_file", required=True, help="Path to test JSON/JSONL file")
     parser.add_argument("--local_dir", default=None, required=True)
     parser.add_argument("--hdfs_dir", default=None)
+    parser.add_argument("--use_speech_prefix", action="store_true", help="Use speech prefix")
 
     args = parser.parse_args()
 
@@ -46,6 +52,14 @@ if __name__ == "__main__":
             # use cosyvoice2 official huggingface compatible checkpoint template
             question = text
             answer = ""
+            # generate a random float between 0 and 1, then convert it to 0 to 5
+            random_number = random.random() * 4 + 1
+            speech_token_len = int(random_number * 25)
+            codes = example.pop("code")
+            prefix_speech_token = codes[:speech_token_len]
+            prefix_speech_str = code_to_solution_str(prefix_speech_token)
+
+            answer = prefix_speech_str if args.use_speech_prefix else ""
 
             data = {
                 "data_source": f"{args.train_file}_{args.test_file}",  # Use file names as data source
@@ -67,6 +81,9 @@ if __name__ == "__main__":
                     "text": text,
                 },
             }
+            if args.use_speech_prefix:
+                data["extra_info"]["prefix_speech_str"] = prefix_speech_str
+
             return data
 
         return process_fn

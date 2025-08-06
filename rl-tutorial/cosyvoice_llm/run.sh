@@ -61,8 +61,11 @@ if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
   # yuekai/llasa_cosyvoice2_token_qwen_0.5b is the emilia zh trained model, please set use_custom_template=True to use the custom template
   # yuekai/cosyvoice2_llm is the official cosyvoice2 llm model, please set use_custom_template=False to use the official template
   mkdir -p $data_dir
+  wget https://huggingface.co/datasets/SparkAudio/voxbox/resolve/main/metadata/emilia_zh.jsonl -O data/emilia_zh.jsonl
+  tail -n 100 data/emilia_zh.jsonl > data/emilia_test.jsonl
+  python3 filter_data.py
   python prepare_data.py \
-    --train_file data/emilia_zh-cosy-zh-filtered-en-removed.jsonl \
+    --train_file data/emilia_zh-cosy-zh-filtered.jsonl \
     --test_file data/emilia_test.jsonl \
     --local_dir $data_dir
 fi
@@ -82,10 +85,7 @@ if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
 fi 
 
 sft_model_path=/workspace/rl/llasa_cosyvoice2_token_qwen_0.5b/checkpoint-885000
-exp_name=emilia_zh_en_removed_prefix_speech
-exp_name=emilia_zh_en_removed_test_grad_norm
-exp_name=aishell3_fix_template
-exp_name=emilia_zh_en_removed_scale_10
+exp_name=emilia_zh_en_removed_new_reward_function
 if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
   log "stage 2: grpo train"
   # wandb login
@@ -116,12 +116,14 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
       actor_rollout_ref.rollout.name=vllm \
       actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
       actor_rollout_ref.rollout.do_sample=true \
-      actor_rollout_ref.rollout.temperature=0.8 \
-      actor_rollout_ref.rollout.top_p=0.9 \
-      actor_rollout_ref.rollout.n=4 \
+      actor_rollout_ref.rollout.temperature=1.0 \
+      actor_rollout_ref.rollout.top_p=1.0 \
+      actor_rollout_ref.rollout.top_k=-1 \
+      actor_rollout_ref.rollout.n=8 \
       actor_rollout_ref.rollout.val_kwargs.do_sample=true \
-      actor_rollout_ref.rollout.val_kwargs.temperature=0.8 \
-      actor_rollout_ref.rollout.val_kwargs.top_p=0.9 \
+      actor_rollout_ref.rollout.val_kwargs.temperature=1.0 \
+      actor_rollout_ref.rollout.val_kwargs.top_p=1.0 \
+      actor_rollout_ref.rollout.val_kwargs.top_k=-1 \
       reward_model.reward_manager=prime \
       custom_reward_function.path=reward_tts.py \
       custom_reward_function.name=compute_score \
@@ -130,15 +132,17 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
       trainer.logger=['console','wandb'] \
       trainer.n_gpus_per_node=$n_gpus_per_node \
       trainer.nnodes=1 \
-      trainer.save_freq=100 \
-      trainer.test_freq=100 \
+      trainer.save_freq=50 \
+      trainer.test_freq=50 \
       trainer.resume_mode='auto' \
       trainer.total_epochs=1 \
-      trainer.val_before_train=False
+      trainer.val_before_train=False \
+      algorithm.norm_adv_by_std_in_grpo=False
 fi
 
-step=200
+steps=(1300 600 700 800)
 
+for step in ${steps[@]}; do
 llm_path=./checkpoints/llasa_tts_grpo/${exp_name}/global_step_${step}
 if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
   log "stage 3: merge the model"
@@ -167,6 +171,7 @@ if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
   bash scripts/compute_wer.sh $output_dir ${dataset}
   done
 fi
+done
 
 if [ $stage -le 5 ] && [ $stop_stage -ge 5 ]; then
   log "stage 5: Infer with single case"
