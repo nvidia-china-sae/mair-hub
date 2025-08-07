@@ -1,0 +1,22 @@
+CUDA_VISIBLE_DEVICES=0 python inference.py \
+    --input_path ./in_wavs \
+    --output_path ./out_wavs \
+    --target_sampling_rate 24000 \
+    --up_sampling_method scipy \
+    --architecture='transformer' \
+    --time_step 1 \
+    --ode_method midpoint \
+    --cfm_method independent_cfm_adaptive \
+    --sigma 0.0001 \
+    --model_path logs_libritts_r_noise_0.9_rir_0.5/FLowHigh.440000.pt \
+    --n_layers 2 \
+    --n_heads 16 \
+    --dim_head 64 \
+    --n_mels 100 \
+    --f_max 12000 \
+    --n_fft 1024 \
+    --win_length 1024 \
+    --hop_length 256 \
+    --vocoder 'bigvgan' \
+    --vocoder_config_path 'vocoder/BIGVGAN/config/bigvgan_base_24khz_100band.json' \
+    --vocoder_path 'vocoder/BIGVGAN/checkpoint/bigvgan_generator.pt'

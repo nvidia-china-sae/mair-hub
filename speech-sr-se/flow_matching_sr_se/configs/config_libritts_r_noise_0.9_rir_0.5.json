@@ -1,0 +1,49 @@
+{
+    "random_seed": 104,
+    "data": {
+      "data_path": "data/libritts_r/LibriTTS_R/train-clean-100/",
+      "valid_path": "data/libritts_r/LibriTTS_R/dev-clean/",
+      "noise_path": "data/dns_challenge/noise_24k/",
+      "rir_path": "data/dns_challenge/rir_24k/",
+      "noise_prob": 0.9,
+      "rir_prob": 0.5,
+      "valid_prepare": true,
+      "samplingrate": 24000,
+      "max_wav_value": 32767.0,
+      "n_fft": 1024,
+      "hop_length": 256,
+      "win_length": 1024,
+      "n_mel_channels": 100,
+      "mel_fmin": 0,
+      "mel_fmax": 12000,
+      "downsample_min": 4000,
+      "downsample_max": 24000,
+      "downsampling_method": "scipy"
+    },
+    "model": {
+      "modelname": "FLowHigh",
+      "architecture": "transformer",
+      "dim": 1024,
+      "n_layers": 2,
+      "n_heads": 16,
+      "dim_head":64,
+      "cfm_path": "independent_cfm_adaptive",
+      "sigma":1e-4,
+      "vocoder": "bigvgan",
+      "vocoderpath": "vocoder/BIGVGAN/checkpoint/bigvgan_generator.pt",
+      "vocoderconfigpath": "vocoder/BIGVGAN/config/bigvgan_base_24khz_100band.json"
+    },
+    "train": {
+      "random_split_seed": 53,
+      "batchsize": 64,
+      "lr": 3e-4,
+      "initial_lr": 1e-5,
+      "n_train_steps": 1000001,
+      "n_warmup_steps": 0,
+      "log_every": 10000,
+      "save_results_every": 10000,
+      "save_model_every": 10000,
+      "save_dir": "./logs_libritts_r_noise_0.9_rir_0.5",
+      "weighted_loss": false
+    }
+  }

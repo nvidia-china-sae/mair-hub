@@ -1,0 +1,15 @@
+torch==2.2.1
+torchaudio==2.2.1
+torchinfo==1.8.0
+torchdiffeq==0.2.3
+torchode==1.0.0
+einops==0.8.0
+beartype==0.17.2
+librosa==0.9.2
+matplotlib==3.7.1
+numpy==1.22.2
+packaging==24.1
+scipy==1.10.1
+gateloop_transformer==0.2.4
+accelerate==0.28.0
+tqdm
