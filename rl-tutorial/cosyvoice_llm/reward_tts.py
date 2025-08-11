@@ -110,7 +110,7 @@ def compute_score(
         print(
             f"\033[92m[{data_source}] Remote reward: {reward:.4f}\033[0m"
         )
-
+    reward = {"score": reward}
     return reward
 
 # CLI quick test

@@ -85,7 +85,7 @@ if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
 fi 
 
 sft_model_path=/workspace/rl/llasa_cosyvoice2_token_qwen_0.5b/checkpoint-885000
-exp_name=emilia_zh_en_removed_new_reward_function
+exp_name=emilia_zh
 if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
   log "stage 2: grpo train"
   # wandb login
@@ -158,11 +158,10 @@ model_path=$llm_path/merged_hf_model
 if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
   log "stage 4: Test the model"
   datasets=(zero_shot_zh test_zh)
-  datasets=(zero_shot_zh)
   for dataset in ${datasets[@]}; do
   output_dir=./outputs_rl_${exp_name}_step${step}_${dataset}
   CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
-  torchrun --nproc_per_node=8 \
+  torchrun --nproc_per_node=$n_gpus \
       infer_dataset.py \
         --output-dir $output_dir \
         --llm-model-name-or-path $model_path \
