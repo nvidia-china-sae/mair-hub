@@ -38,7 +38,6 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
 
   # install Pytriton
   pip install -U nvidia-pytriton
-  # export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/opt/conda/lib:/opt/conda/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64
 
   # download custom CosyVoice2-0.5B LLM
   huggingface-cli download --local-dir /workspace/llasa_cosyvoice2_token_qwen_0.5b yuekai/llasa_cosyvoice2_token_qwen_0.5b
@@ -54,8 +53,6 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
 fi
 
 data_dir=data/parquet_emilia_zh_en_removed
-# data_dir=data/parquet_emilia_zh_en_removed_prefix_speech
-# data_dir=data/parquet_aishell3
 if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
   log "stage 0: prepare data into verl format"
   # yuekai/llasa_cosyvoice2_token_qwen_0.5b is the emilia zh trained model, please set use_custom_template=True to use the custom template
