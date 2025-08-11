@@ -19,7 +19,9 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
   # install verl
   git clone https://github.com/volcengine/verl.git
   cd verl
-  USE_MEGATRON=0 bash scripts/install_vllm_sglang_mcore.sh
+  USE_MEGATRON=0 USE_SGLANG=0 bash scripts/install_vllm_sglang_mcore.sh
+  # manually install flash attn above 2.7.4post1
+  pip install -r requirements.txt
   pip install --no-deps -e .
 
   # install CosyVoice
@@ -50,21 +52,25 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
   # If you would like to use the official CosyVoice2-0.5B LLM and do RL training, please see run_official.sh
 fi
 
-
+data_dir=data/parquet_emilia_zh_en_removed
 if [ $stage -le 0 ] && [ $stop_stage -ge 0 ]; then
   log "stage 0: prepare data into verl format"
   # yuekai/llasa_cosyvoice2_token_qwen_0.5b is the emilia zh trained model, please set use_custom_template=True to use the custom template
   # yuekai/cosyvoice2_llm is the official cosyvoice2 llm model, please set use_custom_template=False to use the official template
+  mkdir -p $data_dir
+  wget https://huggingface.co/datasets/SparkAudio/voxbox/resolve/main/metadata/emilia_zh.jsonl -O data/emilia_zh.jsonl
+  tail -n 100 data/emilia_zh.jsonl > data/emilia_test.jsonl
+  python3 filter_data.py
   python prepare_data.py \
-    --train_file data/emilia_zh-cosy-tiny-train.jsonl \
-    --test_file data/emilia_zh-cosy-tiny-test.jsonl \
-    --local_dir data/parquet_tiny \
-    --use_custom_template
+    --train_file data/emilia_zh-cosy-zh-filtered.jsonl \
+    --test_file data/emilia_test.jsonl \
+    --local_dir $data_dir
 fi
 
+n_gpus=8
 if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
   log "stage 1: start token2wav asr server for reward function"
-  python3 token2wav_asr_server.py --number-of-devices 8
+  python3 token2wav_asr_server.py --number-of-devices $n_gpus
 
   # log "Test the reward server"
   # python3 reward_tts.py \
@@ -76,18 +82,19 @@ if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
 fi 
 
 sft_model_path=/workspace/rl/llasa_cosyvoice2_token_qwen_0.5b/checkpoint-885000
-
+exp_name=emilia_zh
 if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
   log "stage 2: grpo train"
+  # wandb login
   export CUDA_VISIBLE_DEVICES="0,1,2,3,4,5,6,7"
   export MKL_SERVICE_FORCE_INTEL=TRUE
-  n_gpus_per_node=8
+  n_gpus_per_node=$n_gpus
   micro_batch_size=4
   train_batch_size=32
   python3 -m verl.trainer.main_ppo \
       algorithm.adv_estimator=grpo \
-      data.train_files=data/parquet_aishell3_custom/train.parquet \
-      data.val_files=data/parquet_aishell3_custom/test.parquet \
+      data.train_files=$data_dir/train.parquet \
+      data.val_files=$data_dir/test.parquet \
       data.train_batch_size=$train_batch_size \
       data.max_prompt_length=1024 \
       data.max_response_length=1024 \
@@ -106,29 +113,34 @@ if [ $stage -le 2 ] && [ $stop_stage -ge 2 ]; then
       actor_rollout_ref.rollout.name=vllm \
       actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
       actor_rollout_ref.rollout.do_sample=true \
-      actor_rollout_ref.rollout.temperature=0.8 \
-      actor_rollout_ref.rollout.top_p=0.9 \
-      actor_rollout_ref.rollout.n=4 \
+      actor_rollout_ref.rollout.temperature=1.0 \
+      actor_rollout_ref.rollout.top_p=1.0 \
+      actor_rollout_ref.rollout.top_k=-1 \
+      actor_rollout_ref.rollout.n=8 \
       actor_rollout_ref.rollout.val_kwargs.do_sample=true \
-      actor_rollout_ref.rollout.val_kwargs.temperature=0.8 \
-      actor_rollout_ref.rollout.val_kwargs.top_p=0.9 \
+      actor_rollout_ref.rollout.val_kwargs.temperature=1.0 \
+      actor_rollout_ref.rollout.val_kwargs.top_p=1.0 \
+      actor_rollout_ref.rollout.val_kwargs.top_k=-1 \
       reward_model.reward_manager=prime \
       custom_reward_function.path=reward_tts.py \
       custom_reward_function.name=compute_score \
       trainer.project_name='llasa_tts_grpo' \
-      trainer.experiment_name='aishell3_reward_tts_prime_test' \
+      trainer.experiment_name=${exp_name} \
       trainer.logger=['console','wandb'] \
       trainer.n_gpus_per_node=$n_gpus_per_node \
       trainer.nnodes=1 \
-      trainer.save_freq=100 \
-      trainer.test_freq=400 \
+      trainer.save_freq=50 \
+      trainer.test_freq=50 \
       trainer.resume_mode='auto' \
       trainer.total_epochs=1 \
-      trainer.val_before_train=False
+      trainer.val_before_train=False \
+      algorithm.norm_adv_by_std_in_grpo=False
 fi
 
-step=2100
-llm_path=./checkpoints/llasa_tts_grpo/aishell3_reward_tts_prime/global_step_${step}
+steps=(1300 600 700 800)
+
+for step in ${steps[@]}; do
+llm_path=./checkpoints/llasa_tts_grpo/${exp_name}/global_step_${step}
 if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
   log "stage 3: merge the model"
   python -m verl.model_merger merge \
@@ -136,24 +148,26 @@ if [ $stage -le 3 ] && [ $stop_stage -ge 3 ]; then
       --local_dir $llm_path/actor \
       --target_dir $llm_path/merged_hf_model || exit 1
     
-fi 
+fi
+
+token2wav_path=/workspace/CosyVoice2-0.5B
+model_path=$llm_path/merged_hf_model
 if [ $stage -le 4 ] && [ $stop_stage -ge 4 ]; then
   log "stage 4: Test the model"
-  dataset=zero_shot_zh
-  output_dir=./outputs_rl_aishell3_step${step}_${dataset}_jit_trt_fp16_reward_tts
-  token2wav_path=/workspace/CosyVoice2-0.5B
-  model_path=$llm_path/merged_hf_model
-
+  datasets=(zero_shot_zh test_zh)
+  for dataset in ${datasets[@]}; do
+  output_dir=./outputs_rl_${exp_name}_step${step}_${dataset}
   CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 \
-  torchrun --nproc_per_node=8 \
+  torchrun --nproc_per_node=$n_gpus \
       infer_dataset.py \
         --output-dir $output_dir \
         --llm-model-name-or-path $model_path \
         --token2wav-path $token2wav_path \
         --split-name ${dataset} || exit 1
-
   bash scripts/compute_wer.sh $output_dir ${dataset}
+  done
 fi
+done
 
 if [ $stage -le 5 ] && [ $stop_stage -ge 5 ]; then
   log "stage 5: Infer with single case"

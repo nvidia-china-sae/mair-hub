@@ -10,6 +10,7 @@ model_path=models/sherpa-onnx-paraformer-zh-2023-09-14
 if [ ! -d $model_path ]; then
     pip install sherpa-onnx
     wget -nc https://github.com/k2-fsa/sherpa-onnx/releases/download/asr-models/sherpa-onnx-paraformer-zh-2023-09-14.tar.bz2
+    mkdir -p models
     tar xvf sherpa-onnx-paraformer-zh-2023-09-14.tar.bz2 -C models
 fi
 
@@ -24,9 +25,6 @@ python3 scripts/offline-decode-files.py  \
     --feature-dim=80 \
     --split-name $split_name \
     --name sherpa_onnx \
-    $wav_files
+    $wav_files || exit 1
 
-# python3 scripts/paraformer-pytriton-client.py  \
-#     --log-dir $wav_dir \
-#     --split-name $split_name \
-#     $wav_files
+python3 scripts/compute-wer.py "$wav_dir/recogs-sherpa_onnx.txt" > "$wav_dir/wer-sherpa-onnx.txt" || exit 1

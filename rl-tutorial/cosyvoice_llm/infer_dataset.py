@@ -52,10 +52,6 @@ try:
 except RuntimeError:
     pass
 
-
-TEMPLATE = "{% for message in messages %}{%- if message['role'] == 'user' %}{{- '<|im_start|>' + message['role'] + '\n' + 'Convert the text to speech: ' + message['content'] + '<|im_end|>\n'}}{%- elif message['role'] == 'assistant' %}{{- '<|im_start|>' + message['role'] + '\n' + '<|SPEECH_GENERATION_START|>' + message['content']}}{%- endif %}{%- endfor %}"
-
-
 def audio_decode_cosyvoice2(
     audio_tokens, prompt_text, prompt_speech_16k, codec_decoder
 ):
@@ -197,6 +193,12 @@ def data_collator(batch, tokenizer, s3_tokenizer):
         prompt_text_list.append(prompt_text)
         # Combine prompt and target text
         full_text = prompt_text + target_text
+        # remove the unnecessary punctuation for cosyvoice3 zero_shot_zh dataset
+        puncts = ['"', '(', ')', '“', '”', '‘', '（', '）', '\'']
+        for p in puncts:
+            if p in full_text:
+                full_text = full_text.replace(p, '')
+                print(f"removed {p} from {full_text}")
 
         # get prompt audio for CosyVoice2 (convert to 16kHz)
         ref_audio_org, ref_sr = (
@@ -234,8 +236,9 @@ def data_collator(batch, tokenizer, s3_tokenizer):
             {"role": "user", "content": full_text},
             {"role": "assistant", "content": prompt_audio_cosy2_id_str}
         ]
-        if 'system' in tokenizer.chat_template:
-            tokenizer.chat_template = TEMPLATE
+
+        assert 'system' not in tokenizer.chat_template, "system is not allowed in the chat template"
+
         input_ids = tokenizer.apply_chat_template(
             chat,
             tokenize=True,
@@ -301,7 +304,7 @@ def main():
         prompt_speech_16k = load_wav(args.prompt_speech_path, 16000)
     else:
         prompt_speech_16k = None
-    s3_tokenizer = s3tokenizer.load_model("speech_tokenizer_v2_25hz").to(device) if 'zero' in args.split_name else None
+    s3_tokenizer = s3tokenizer.load_model(f"{args.token2wav_path}/speech_tokenizer_v2.onnx").to(device) if 'zero' in args.split_name else None
     dataset_name = "yuekai/CV3-Eval" if 'zero' in args.split_name else "yuekai/seed_tts_cosy2"
     dataset = load_dataset(
         dataset_name,
