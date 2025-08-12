@@ -271,7 +271,13 @@ The following experiments are conducted on multiple nodes and with a larger max_
 
 From the above figure, we can see that the async DAPO recipe can achieve a similar performance to the baseline, but with a much lower rollout time.
 
-Overall throughput has improved by about 10%, and the time spent in the rollout phase has decreased by 20%.
+Overall throughput has improved by about 15%, and the time spent in the rollout phase has decreased by 20%.
+
+## Future Work
+
+- [ ] Add more experiments with different models.
+- [ ] Apply the async DAPO recipe to multi-turn Agentic RL tasks.
+
 
 ## References and Acknowledgments
 
