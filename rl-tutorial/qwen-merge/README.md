@@ -174,7 +174,7 @@ We conducted comprehensive testing on multiple standard multimodal reasoning eva
 | MMStar | 56.40 | 64.27 | 60.46 | 61.86 |
 | MMMU_DEV_VAL | 49.33 | 54.00 | 54.67 | 58.00 |
 | LogicVista | 39.37 | 47.43 | 47.20 | 48.77 |
-| MathVista_MINI | 61.7 | 66.5 | 45.81 | 53.05 |
+| MathVista_MINI | 61.7 | 66.5 | 66.40 | 67.90 |
 | MathVision_MINI | 21.51 | 27.30 | 28.95 | 34.21 |
 | ScienceQA_VAL | 79.40 | 89.46 | 91.13 | 91.75 |
 | VisOnlyQA | 38.76 | 43.34 | 43.27 | 44.18 |
