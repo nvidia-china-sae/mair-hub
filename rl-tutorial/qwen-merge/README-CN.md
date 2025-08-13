@@ -175,13 +175,13 @@ python3 run.py --data ${TASK_NAME} --model ${MODEL_NAME} --verbose --use-vllm --
 | MMStar | 56.40 | 64.27 | 60.46 | 61.86 |
 | MMMU_DEV_VAL | 49.33 | 54.00 | 54.67 | 58.00 |
 | LogicVista | 39.37 | 47.43 | 47.20 | 48.77 |
-| MathVista_MINI | 61.7 | 66.5 | 45.81 | 53.05 |
+| MathVista_MINI | 61.70 | 66.50 | 66.40 | 67.90 |
 | MathVision_MINI | 21.51 | 27.30 | 28.95 | 34.21 |
 | ScienceQA_VAL | 79.40 | 89.46 | 91.13 | 91.75 |
 | VisOnlyQA | 38.76 | 43.34 | 43.27 | 44.18 |
 | WorldMed-QA-V | 29.59 | 25.70 | 29.40 | 28.00 |
 | TextVQA | 79.32 | 85.36 | 68.56 | 69.97 |
-| OCRBench | 82.6 | 88.2 | 74.8 | 75.5 |
+| OCRBench | 82.60 | 88.20 | 74.80 | 75.50 |
 | MMVet | 35.32 | 37.75 | 25.87 | 33.67 |
 | AI2D_TEST | 78.14 | 81.06 | 76.13 | 78.36 |
 | ChartQA_TEST | 83.88 | 85.96 | 65.56 | 66.00 |
