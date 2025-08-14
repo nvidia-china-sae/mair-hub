@@ -9,7 +9,7 @@ The following directories contain specialized resources for different aspects of
 | Directory | Description |
 |-----------|-------------|
 | [rl-tutorial](./rl-tutorial/) | Reinforcement Learning tutorials, including RL experiments with step-by-step guidance for reproduction |
-| [speech-llm](./speech-llm/) | Speech LLM training recipes, including Qwen-omni-like speech2speech model training etc. |
+| [speech-llm](./speech-llm/) | Speech LLM training recipes, including Qwen-omni-like speech2speech model training, and LLM enhanced semi-supervised learning for Speech Foundational Models etc. |
 | [external-resources](#external-resources) | Curated links to other valuable multimodal AI resources |
 
 ### RL-Tutorial
@@ -30,6 +30,7 @@ The [rl-tutorial](./rl-tutorial/) directory contains resources focused on reinfo
 The [speech-llm](./speech-llm/) directory provides resources for training Speech LLMs:
 
 - [qwen-omni-like](./speech-llm/qwen_omni_like/): Recipe for training **Qwen2.5-Omni-style** speech-to-speech (S2S) models.
+- [less_recipe](./speech-llm/less_recipe/): Recipe for finetuning Speech Foundational Models with LLM enhanced semi-supervised learning. 
 
 ### External Resources
 
