@@ -102,6 +102,11 @@ async def process_sample(idx, total, sample, session, url, semaphore):
         code_list = sample["code"]
         tokens = np.array(code_list, dtype=np.int32).reshape(1, -1)
         token_lens = np.array([[len(tokens[0])]], dtype=np.int32)
+
+        target_length = 256 if tokens.shape[1] < 256 else 512 if tokens.shape[1] < 512 else 1024
+        pad_width = target_length - tokens.shape[1]
+        tokens = np.pad(tokens, ((0, 0), (0, pad_width)), mode='constant', constant_values=0)
+
         gt_text = sample["text"]
         data = prepare_request(tokens, token_lens, gt_text)
 
