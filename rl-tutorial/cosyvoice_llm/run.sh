@@ -52,7 +52,7 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
   # If you would like to use the official CosyVoice2-0.5B LLM and do RL training, please see run_official.sh
 
   # install FlashCosyVoice for token2wav
-  git clone https://github.com/yuekaizhang/FlashCosyVoice.git /workspace/FlashCosyVoice
+  git clone https://github.com/yuekaizhang/FlashCosyVoice.git /workspace/FlashCosyVoice -b trt
   cd /workspace/FlashCosyVoice
   pip install -e . 
   cd -
