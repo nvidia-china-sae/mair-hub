@@ -29,7 +29,7 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
   pip install -r ./requirements-cosyvoice.txt
 
   # download CosyVoice2-0.5B for token2wav
-  modelscope download --model iic/CosyVoice2-0.5B --local-dir /workspace/CosyVoice2-0.5B
+  modelscope download --model iic/CosyVoice2-0.5B --local_dir /workspace/CosyVoice2-0.5B
 
   # install PytritonSenseVoice
   git clone https://github.com/yuekaizhang/PytritonSenseVoice.git /workspace/PytritonSenseVoice
@@ -50,6 +50,15 @@ if [ $stage -le -1 ] && [ $stop_stage -ge -1 ]; then
   #   --pretrained-cosyvoice2-path /workspace/CosyVoice2-0.5B \
   #   --save-path ./transformers_cosyvoice2_llm
   # If you would like to use the official CosyVoice2-0.5B LLM and do RL training, please see run_official.sh
+
+  # install FlashCosyVoice for token2wav
+  git clone https://github.com/yuekaizhang/FlashCosyVoice.git /workspace/FlashCosyVoice -b trt
+  cd /workspace/FlashCosyVoice
+  pip install -e . 
+  cd -
+  # download flow.decoder.estimator.fp32.dynamic_batch.onnx to export trt with batching
+  cosyvoice_model_path=/workspace/CosyVoice2-0.5B
+  wget https://huggingface.co/yuekai/cosyvoice2_flow_onnx/resolve/main/flow.decoder.estimator.fp32.dynamic_batch.onnx -O $cosyvoice_model_path/flow.decoder.estimator.fp32.dynamic_batch.onnx
 fi
 
 data_dir=data/parquet_emilia_zh_en_removed
@@ -70,6 +79,9 @@ fi
 n_gpus=8
 if [ $stage -le 1 ] && [ $stop_stage -ge 1 ]; then
   log "stage 1: start token2wav asr server for reward function"
+
+
+
   python3 token2wav_asr_server.py --number-of-devices $n_gpus
 
   # log "Test the reward server"

@@ -37,6 +37,11 @@ def _remote_reward(tokens: List[int], ground_truth: str, timeout: float = 200.0)
     tokens_arr = np.array(tokens, dtype=np.int32).reshape(1, -1)
     lens_arr = np.array([[tokens_arr.shape[1]]], dtype=np.int32)
 
+    # pad to allow pytriton to batch, since pytriton only support batching with same shape
+    target_length = 256 if tokens_arr.shape[1] < 256 else 512 if tokens_arr.shape[1] < 512 else 1024
+    pad_width = target_length - tokens_arr.shape[1]
+    tokens_arr = np.pad(tokens_arr, ((0, 0), (0, pad_width)), mode='constant', constant_values=0)
+
     gt_arr = np.array([ground_truth.encode("utf-8")], dtype=object)
 
     payload = {
