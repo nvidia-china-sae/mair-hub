@@ -273,6 +273,17 @@ From the above figure, we can see that the async DAPO recipe can achieve a simil
 
 Overall throughput has improved by about 15%, and the time spent in the rollout phase has decreased by 20%.
 
+### Additional Experiment: 8k Max Sequence Length
+
+We conducted an additional experiment using the same Qwen3-8B-Base model but with a reduced max_response_length (8k) to evaluate performance under different sequence length constraints.
+
+![Training results with 8k max sequence length](assets/exp-qwen3-8b-1.png)
+
+- Green Line: using the above async DAPO recipe
+- Yellow Lines: the baseline, using the original AgentLoop async rollout.
+
+In this 8k experiment, the async DAPO recipe boosts efficiency and yields stabilized training by favoring shorter and low variance trajectories while saving wasted compute.
+
 ## Future Work
 
 - [ ] Add more experiments with different models.
