@@ -28,6 +28,8 @@ from jiwer import wer
 from pypinyin import lazy_pinyin, Style
 from tn.chinese.normalizer import Normalizer as ZhNormalizer
 
+from token2wav import CosyVoice2_Token2Wav
+
 # Chinese text normalizer (cached globally)
 zh_tn_model = ZhNormalizer(
     cache_dir="./cache",
@@ -43,8 +45,6 @@ from pytriton.triton import Triton, TritonConfig
 from pytriton.proxy.types import Request
 
 from omnisense.models import OmniSenseVoiceSmall
-from cosyvoice.cli.cosyvoice import CosyVoice2
-
 from datasets import load_dataset
 
 sys.path.append("/workspace/CosyVoice/third_party/Matcha-TTS")
@@ -77,45 +77,6 @@ class _ASR_Server:
         transcripts = np.char.encode(np.array(texts).reshape(-1, 1), "utf-8")
         return {"TRANSCRIPTS": transcripts}
 
-
-
-def audio_decode_cosyvoice2(
-    audio_tokens, prompt_text, prompt_speech_16k, codec_decoder
-):
-    """
-    Generate audio from tokens with optional tone and prompt embedding.
-    """
-    model_inputs_dict = codec_decoder.frontend.frontend_zero_shot(
-        "empty", prompt_text, prompt_speech_16k, 24000
-    )
-    tts_mel, _ = codec_decoder.model.flow.inference(
-        token=audio_tokens.to(codec_decoder.model.device),
-        token_len=torch.tensor([audio_tokens.shape[1]], dtype=torch.int32).to(
-            codec_decoder.model.device
-        ),
-        prompt_token=model_inputs_dict["flow_prompt_speech_token"].to(
-            codec_decoder.model.device
-        ),
-        prompt_token_len=torch.tensor(
-            [model_inputs_dict["flow_prompt_speech_token_len"]], dtype=torch.int32
-        ).to(codec_decoder.model.device),
-        prompt_feat=model_inputs_dict["prompt_speech_feat"].to(
-            codec_decoder.model.device
-        ),
-        prompt_feat_len=model_inputs_dict["prompt_speech_feat_len"].to(
-            codec_decoder.model.device
-        ),
-        embedding=model_inputs_dict["flow_embedding"].to(codec_decoder.model.device),
-        finalize=True,
-    )
-
-    audio_hat, _ = codec_decoder.model.hift.inference(
-        speech_feat=tts_mel, cache_source=torch.zeros(1, 1, 0)
-    )
-
-    return audio_hat
-
-
 def get_random_prompt_from_dataset(dataset):
     """
     Get random prompt text and speech from the pre-loaded dataset.
@@ -135,7 +96,7 @@ def get_random_prompt_from_dataset(dataset):
         audio_array = resample(audio_array, num_samples)
 
     # Convert to torch tensor
-    prompt_speech_16k = torch.from_numpy(audio_array).float().unsqueeze(0)
+    prompt_speech_16k = torch.from_numpy(audio_array).float()
     prompt_text = sample["text"]
     # remove space in prompt_text
     prompt_text = prompt_text.replace(" ", "")
@@ -167,9 +128,8 @@ class _Token2Wav_ASR:
 
         # Construct the TTS codec decoder under the correct CUDA device context
         with torch.cuda.device(self.device_id):
-            self.codec_decoder = CosyVoice2(
-                "/workspace/CosyVoice2-0.5B", load_jit=True, load_trt=True, fp16=True
-            )
+            path="/workspace/CosyVoice2-0.5B"
+            self.codec_decoder = CosyVoice2_Token2Wav(model_dir=path, enable_trt=True, device_id=self.device_id)
     @batch
     def __call__(self, TOKENS: np.ndarray, TOKEN_LENS: np.ndarray, GT_TEXT: np.ndarray):
         """
@@ -184,6 +144,8 @@ class _Token2Wav_ASR:
             print(f"device_id: {self.device_id}, TOKENS: {TOKENS.shape}, TOKEN_LENS: {TOKEN_LENS.shape}")
 
         tokens_list = [TOKENS[i, :TOKEN_LENS[i, 0]] for i in range(len(TOKENS))]
+        # convert tokens_list to list of list
+        tokens_list = [tokens_list[i].tolist() for i in range(len(tokens_list))]
 
         # Decode ground-truth text strings (BYTES → str)
         if GT_TEXT.ndim == 2:
@@ -192,17 +154,15 @@ class _Token2Wav_ASR:
             gt_texts = [GT_TEXT[i].decode("utf-8") for i in range(len(GT_TEXT))]
 
         wavs = []
-        for tokens in tokens_list:
-            prompt_text, prompt_speech_16k = get_random_prompt_from_dataset(self.dataset)
-            audio_tokens = torch.tensor(tokens, dtype=torch.long, device=self.asr_model.device).unsqueeze(0)
-            audio_hat = audio_decode_cosyvoice2(
-                audio_tokens,
-                prompt_text,
-                prompt_speech_16k,
-                self.codec_decoder,
-            )
+        batch_size = len(tokens_list)
+        print(f"batch_size: {batch_size}==============================================================")
+        prompt_speech_list = [get_random_prompt_from_dataset(self.dataset)[1] for i in range(batch_size)]
+        prompt_speech_sample_rate_list = [16000] * batch_size
+        output_wavs = self.codec_decoder(tokens_list, prompt_speech_list, prompt_speech_sample_rate_list)
+
+        for audio_hat in output_wavs:
             # resample to 16000 using soundfile
-            audio_hat = audio_hat.squeeze(0).float().cpu()
+            audio_hat = audio_hat.squeeze().float().cpu()
             audio_hat = audio_hat.numpy()
             num_samples = int(len(audio_hat) * (16000 / 24000))
             audio_hat = resample(audio_hat, num_samples)
@@ -266,7 +226,7 @@ def main():
     parser.add_argument(
         "--max-batch-size",
         type=int,
-        default=32,
+        default=4,
         help="Batch size of request.",
         required=False,
     )
