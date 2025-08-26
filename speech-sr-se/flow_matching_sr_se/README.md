@@ -43,6 +43,9 @@ bash resample_wavs.sh data/dns_challenge/rir/ data/dns_challenge/rir_24k/ 24000
 
 ```bash
 python train.py --config=./configs/config_libritts_r_noise_0.9_rir_0.5.json
+
+# train a larger model for better quality
+python train.py --config=./configs/config_libritts_r_noise_0.9_rir_0.5_12_layers.json
 ```
 
 4. Run inference:
