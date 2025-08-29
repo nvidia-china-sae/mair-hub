@@ -32,6 +32,12 @@ The [speech-llm](./speech-llm/) directory provides resources for training Speech
 - [qwen-omni-like](./speech-llm/qwen_omni_like/): Recipe for training **Qwen2.5-Omni-style** speech-to-speech (S2S) models.
 - [less_recipe](./speech-llm/less_recipe/): Recipe for finetuning Speech Foundational Models with LLM enhanced semi-supervised learning. 
 
+### Speech-SR-SE
+
+The [speech-sr-se](./speech-sr-se/) directory provides resources for training Speech Super-Resolution and Enhancement models:
+
+- [flow_matching_sr_se](./speech-sr-se/flow_matching_sr_se/): Best practice for training a joint speech super-resolution and enhancement model based on flow-matching.
+
 ### External Resources
 
 This section provides links to valuable external tutorials and resources related to multimodal AI:
