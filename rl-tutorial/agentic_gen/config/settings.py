@@ -98,13 +98,9 @@ class Settings:
                     "min": int(os.getenv("AGENT_MIN_TOOLS", "3")), 
                     "max": int(os.getenv("AGENT_MAX_TOOLS", "6"))
                 },
-                # todo
-                # "batch_size": int(os.getenv("AGENT_BATCH_SIZE", "50"))
             },
             "tasks": {
                 "tasks_per_difficulty": 1,
-                # todo
-                # "max_workers": 64
             },
             "user_personas": {
                 "target_count": int(os.getenv("USER_PERSONA_TARGET_COUNT", "500")),

@@ -193,32 +193,6 @@ def analyze_generation_results(scenarios: List[Dict[str, Any]], tools: List[Dict
     
     return analysis
 
-# todo
-# def save_consolidated_results(tools: List[Dict[str, Any]], analysis: Dict[str, Any], logger):
-#     """Save consolidated results"""
-#     logger.info("Saving consolidated results...")
-    
-#     try:
-#         tools_path = settings.get_data_path('tools')
-#         file_manager = FileManager(tools_path, logger)
-        
-#         from datetime import datetime
-#         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        
-#         # Save analysis results
-#         analysis_file = f"generation_analysis_{timestamp}.json"
-#         file_manager.save_json(analysis, analysis_file)
-#         logger.info(f"Saved analysis results: {analysis_file}")
-        
-#         return {
-#             'analysis_file': str(tools_path / analysis_file),
-#             'timestamp': timestamp
-#         }
-        
-#     except Exception as e:
-#         logger.error(f"Failed to save results: {e}")
-#         raise
-
 
 def main():
     """Main function"""
