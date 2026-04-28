@@ -82,11 +82,11 @@ Results in Word Error Rate, the lower the better.
 
 | Model  | LESS | AISHELL1 | AISHELL2 | wenet_meeting |
 | ------ | ---- | -------- | -------- | ------------- |
-| Sup.   | -    | 2.86 | 5.26 | 17.65 |
-| Iter 1 | N | 2.98 | 5.28 | 15.94 |
-| Iter 1 | Y | 2.96 | 5.32 | 14.96 |
-| Iter 2 | Y | 3.02 | 5.30 | 14.15 |
-| Iter 3 | Y | 2.96 | 5.24 | 13.88 |
+| Sup.   | -    | 2.9 | 5.3 | 17.7 |
+| Iter 1 | N | 3.0 | 5.3 | 15.9 |
+| Iter 1 | Y | 3.0 | 5.3 | 15.0 |
+| Iter 2 | Y | 3.0 | 5.3 | 14.2 |
+| Iter 3 | Y | 3.0 | 5.2 | 13.9 |
 ### Spanish-to-English AST
 Results in Bleu scores, the higher the better.
 
@@ -97,12 +97,11 @@ Results in Bleu scores, the higher the better.
 | Iter 1 | Y | 34.0 | 64.7 | 37.3 |
 ## Citation
 ``` bibtex
-@misc{ding2025lesslargelanguagemodel,
-      title={LESS: Large Language Model Enhanced Semi-Supervised Learning for Speech Foundational Models}, 
-      author={Wen Ding and Fan Qian},
-      year={2025},
-      eprint={2506.04586},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL},
-      url={https://arxiv.org/abs/2506.04586}, 
+@INPROCEEDINGS{ding2026lesslargelanguagemodel,
+  author={Ding, Wen and Qian, Fan},
+  booktitle={ICASSP 2026 - 2026 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 
+  title={LESS: Large Language Model Enhanced Semi-Supervised Learning for Speech Foundational Models Using in-the-wild Data}, 
+  year={2026},
+  pages={5806-5810},
+  doi={10.1109/ICASSP55912.2026.11462195}
 }
